@@ -1,0 +1,285 @@
+{
+  "challenges": [
+    {
+      "id": "sec-aware-1",
+      "roomId": "security-awareness",
+      "roomName": "Security Awareness",
+      "title": "Phishing Email Analysis",
+      "description": "Analyze the suspicious email and identify the phishing indicators. Look for suspicious sender domains, urgency tactics, and grammatical errors.",
+      "points": 100,
+      "difficulty": "medium",
+      "type": "security-awareness",
+      "isActive": true,
+      "correctAnswer": "suspicious-domain.com",
+      "acceptedAnswers": ["suspicious-domain.com", "fake-domain.com", "phishing domain"],
+      "hints": [
+        "Check the sender's email domain carefully",
+        "Look for misspellings in the domain name",
+        "Notice any urgency language or threats"
+      ],
+      "penaltyPerIncorrect": 10,
+      "maxIncorrectAttempts": 3
+    },
+        {
+      "id": "sec-aware-11",
+      "roomId": "security-awareness",
+      "roomName": "Security Awareness",
+      "title": "Phishing Email Analysis",
+      "description": "Analyze the suspicious email and identify the phishing indicators. Look for suspicious sender domains, urgency tactics, and grammatical errors.",
+      "points": 100,
+      "difficulty": "medium",
+      "type": "security-awareness",
+      "isActive": true,
+      "correctAnswer": "suspicious-domain.com",
+      "acceptedAnswers": ["suspicious-domain.com", "fake-domain.com", "phishing domain"],
+      "hints": [
+        "Check the sender's email domain carefully",
+        "Look for misspellings in the domain name",
+        "Notice any urgency language or threats"
+      ],
+      "penaltyPerIncorrect": 10,
+      "maxIncorrectAttempts": 3
+    },
+        {
+      "id": "sec-aware-12",
+      "roomId": "security-awareness2",
+      "roomName": "Security Awareness",
+      "title": "Phishing Email Analysis",
+      "description": "Analyze the suspicious email and identify the phishing indicators. Look for suspicious sender domains, urgency tactics, and grammatical errors.",
+      "points": 100,
+      "difficulty": "medium",
+      "type": "security-awareness",
+      "isActive": true,
+      "correctAnswer": "suspicious-domain.com",
+      "acceptedAnswers": ["suspicious-domain.com", "fake-domain.com", "phishing domain"],
+      "hints": [
+        "Check the sender's email domain carefully",
+        "Look for misspellings in the domain name",
+        "Notice any urgency language or threats"
+      ],
+      "penaltyPerIncorrect": 10,
+      "maxIncorrectAttempts": 3
+    },
+    {
+      "id": "sec-aware-2", 
+      "roomId": "security-awareness",
+      "roomName": "Security Awareness",
+      "title": "Social Engineering Detection",
+      "description": "Identify the social engineering technique used in the scenario. The attacker calls pretending to be IT support.",
+      "points": 150,
+      "difficulty": "medium",
+      "type": "security-awareness",
+      "isActive": true,
+      "correctAnswer": "pretexting",
+      "acceptedAnswers": ["pretexting", "pretext", "impersonation"],
+      "hints": [
+        "The attacker is creating a false scenario",
+        "They are impersonating a trusted authority",
+        "This technique involves creating a fabricated situation"
+      ],
+      "penaltyPerIncorrect": 15,
+      "maxIncorrectAttempts": 3
+    },
+    {
+      "id": "sec-aware-3",
+      "roomId": "security-awareness", 
+      "roomName": "Security Awareness",
+      "title": "Password Policy Violation",
+      "description": "Review the password 'Password123!' and identify what makes it weak according to security best practices.",
+      "points": 75,
+      "difficulty": "easy",
+      "type": "security-awareness",
+      "isActive": true,
+      "correctAnswer": "common word",
+      "acceptedAnswers": ["common word", "dictionary word", "predictable", "common pattern"],
+      "hints": [
+        "The base word is very common",
+        "Adding numbers and symbols to common words doesn't make them secure",
+        "Attackers often try common words with simple modifications"
+      ],
+      "penaltyPerIncorrect": 5,
+      "maxIncorrectAttempts": 5
+    },
+    {
+      "id": "pass-sec-1",
+      "roomId": "password-security",
+      "roomName": "Password Security", 
+      "title": "Password Strength Analysis",
+      "description": "Evaluate the password 'Tr0ub4dor&3' and suggest the main improvement needed.",
+      "points": 100,
+      "difficulty": "easy",
+      "type": "password-security",
+      "isActive": true,
+      "correctAnswer": "increase length",
+      "acceptedAnswers": ["increase length", "make it longer", "add more characters", "length"],
+      "hints": [
+        "Length is more important than complexity",
+        "Longer passwords are exponentially harder to crack",
+        "Consider using a passphrase instead"
+      ],
+      "penaltyPerIncorrect": 5,
+      "maxIncorrectAttempts": 4
+    },
+    {
+      "id": "pass-sec-2",
+      "roomId": "password-security",
+      "roomName": "Password Security",
+      "title": "Hash Cracking Challenge", 
+      "description": "Crack this MD5 hash: 5d41402abc4b2a76b9719d911017c592. What is the original password?",
+      "points": 200,
+      "difficulty": "hard",
+      "type": "password-security",
+      "isActive": true,
+      "correctAnswer": "hello",
+      "acceptedAnswers": ["hello"],
+      "hints": [
+        "Try using an online MD5 cracker",
+        "This is a very common word",
+        "MD5 is cryptographically broken and should not be used"
+      ],
+      "penaltyPerIncorrect": 20,
+      "maxIncorrectAttempts": 3
+    },
+    {
+      "id": "pass-sec-3",
+      "roomId": "password-security",
+      "roomName": "Password Security",
+      "title": "Multi-Factor Authentication",
+      "description": "What is the most secure second factor for MFA that doesn't rely on SMS or phone calls?",
+      "points": 125,
+      "difficulty": "medium",
+      "type": "password-security", 
+      "isActive": true,
+      "correctAnswer": "hardware token",
+      "acceptedAnswers": ["hardware token", "security key", "FIDO2", "yubikey", "hardware security key"],
+      "hints": [
+        "SMS and phone calls can be intercepted",
+        "Physical devices are harder to compromise",
+        "FIDO2 standard provides the highest security"
+      ],
+      "penaltyPerIncorrect": 10,
+      "maxIncorrectAttempts": 4
+    },
+    {
+      "id": "osint-1",
+      "roomId": "osint-investigation",
+      "roomName": "OSINT Investigation",
+      "title": "Digital Footprint Analysis",
+      "description": "Using the username 'cyberpirate2024', find which social media platform they're most active on. Search carefully through public sources.",
+      "points": 150,
+      "difficulty": "medium", 
+      "type": "osint",
+      "isActive": true,
+      "correctAnswer": "twitter",
+      "acceptedAnswers": ["twitter", "x.com", "x", "twitter/x"],
+      "hints": [
+        "Try searching the username on different platforms",
+        "Look for the platform with the most recent activity",
+        "Check multiple social media sites"
+      ],
+      "penaltyPerIncorrect": 15,
+      "maxIncorrectAttempts": 3
+    },
+    {
+      "id": "osint-2",
+      "roomId": "osint-investigation",
+      "roomName": "OSINT Investigation", 
+      "title": "Geolocation Challenge",
+      "description": "From the image metadata and visible landmarks, determine the city where this photo was taken. The building has a distinctive clock tower.",
+      "points": 200,
+      "difficulty": "hard",
+      "type": "osint",
+      "isActive": true,
+      "correctAnswer": "london",
+      "acceptedAnswers": ["london", "london uk", "london england"],
+      "hints": [
+        "Look for distinctive architectural features",
+        "The clock tower is world-famous", 
+        "This is the capital city of England"
+      ],
+      "penaltyPerIncorrect": 25,
+      "maxIncorrectAttempts": 2
+    },
+    {
+      "id": "osint-3",
+      "roomId": "osint-investigation",
+      "roomName": "OSINT Investigation",
+      "title": "Company Intelligence",
+      "description": "Research CyberUFV's founding year using only public sources. When was the cybersecurity club established?",
+      "points": 100,
+      "difficulty": "easy",
+      "type": "osint",
+      "isActive": true,
+      "correctAnswer": "2023",
+      "acceptedAnswers": ["2023"],
+      "hints": [
+        "Check the university's official website",
+        "Look for press releases or news articles",
+        "Social media posts might contain historical information"
+      ],
+      "penaltyPerIncorrect": 5,
+      "maxIncorrectAttempts": 4
+    },
+    {
+      "id": "crypto-1",
+      "roomId": "cryptography-lab",
+      "roomName": "Cryptography Lab",
+      "title": "Caesar Cipher Decode",
+      "description": "Decrypt this Caesar cipher (shift of 13): 'Plph Vhphfgre Cebtenz'",
+      "points": 100,
+      "difficulty": "easy",
+      "type": "cryptography",
+      "isActive": true,
+      "correctAnswer": "Cyber Security Program",
+      "acceptedAnswers": ["Cyber Security Program", "cyber security program"],
+      "hints": [
+        "This uses ROT13 (rotation of 13)",
+        "Each letter is shifted by 13 positions in the alphabet",
+        "A becomes N, B becomes O, etc."
+      ],
+      "penaltyPerIncorrect": 10,
+      "maxIncorrectAttempts": 3
+    },
+    {
+      "id": "crypto-2",
+      "roomId": "cryptography-lab",
+      "roomName": "Cryptography Lab",
+      "title": "Base64 Decoding",
+      "description": "Decode this Base64 string: 'Q3liZXJVRlYgaXMgYXdlc29tZSE='",
+      "points": 75,
+      "difficulty": "easy",
+      "type": "cryptography",
+      "isActive": true,
+      "correctAnswer": "CyberUFV is awesome!",
+      "acceptedAnswers": ["CyberUFV is awesome!", "cyberufv is awesome!"],
+      "hints": [
+        "Base64 encoding is commonly used for data transfer",
+        "Use an online Base64 decoder",
+        "The result is a simple English phrase"
+      ],
+      "penaltyPerIncorrect": 5,
+      "maxIncorrectAttempts": 4
+    },
+    {
+      "id": "crypto-3",
+      "roomId": "cryptography-lab",
+      "roomName": "Cryptography Lab",
+      "title": "RSA Key Analysis",
+      "description": "Analyze this weak RSA implementation. Given p=17, q=19, and e=3, calculate the private key exponent d.",
+      "points": 250,
+      "difficulty": "hard",
+      "type": "cryptography",
+      "isActive": true,
+      "correctAnswer": "107",
+      "acceptedAnswers": ["107"],
+      "hints": [
+        "Calculate n = p * q = 323",
+        "Calculate φ(n) = (p-1)(q-1) = 288", 
+        "Find d where (e * d) mod φ(n) = 1",
+        "Use the Extended Euclidean Algorithm"
+      ],
+      "penaltyPerIncorrect": 30,
+      "maxIncorrectAttempts": 2
+    }
+  ]
+}
