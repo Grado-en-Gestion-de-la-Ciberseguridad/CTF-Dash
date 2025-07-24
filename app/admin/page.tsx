@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Settings, ArrowLeft, CheckCircle, XCircle, Clock, Users, Target, Award, Download, Trophy } from 'lucide-react'
+import { Settings, ArrowLeft, CheckCircle, XCircle, Clock, Users, Target, Award, Download, Trophy, Terminal } from 'lucide-react'
 import { Team, Submission, AdminStats, Challenge } from '../types'
 import { useAuth } from '../AuthContext'
 import Navigation from '../Navigation'
@@ -299,6 +299,45 @@ function AdminPageContent() {
                   </div>
                 </div>
               )}
+
+              {/* Quick Actions */}
+              <div className="bg-slate-800/50 rounded-lg p-6 mb-6">
+                <h3 className="text-xl font-bold text-white mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Link 
+                    href="/terminal" 
+                    className="flex items-center gap-3 bg-black/50 border border-green-400/30 rounded-lg p-4 hover:border-green-400 transition-all duration-300 group"
+                  >
+                    <Terminal className="h-6 w-6 text-green-400 group-hover:animate-pulse" />
+                    <div>
+                      <h4 className="text-green-400 font-semibold">Secret Terminal</h4>
+                      <p className="text-green-300 text-sm">Access hidden terminal for demos</p>
+                    </div>
+                  </Link>
+                  
+                  <Link 
+                    href="/resources" 
+                    className="flex items-center gap-3 bg-slate-700/50 border border-gray-600/30 rounded-lg p-4 hover:border-gray-400 transition-all duration-300 group"
+                  >
+                    <Settings className="h-6 w-6 text-gray-400 group-hover:animate-pulse" />
+                    <div>
+                      <h4 className="text-white font-semibold">Resources Hub</h4>
+                      <p className="text-gray-300 text-sm">View all CTF resources</p>
+                    </div>
+                  </Link>
+                  
+                  <button 
+                    onClick={exportData}
+                    className="flex items-center gap-3 bg-blue-600/20 border border-blue-600/30 rounded-lg p-4 hover:border-blue-400 transition-all duration-300 group"
+                  >
+                    <Download className="h-6 w-6 text-blue-400 group-hover:animate-pulse" />
+                    <div>
+                      <h4 className="text-blue-400 font-semibold">Export Data</h4>
+                      <p className="text-blue-300 text-sm">Download all submissions</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
 
               {/* Recent Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,0 +1,63 @@
+CLASSIFIED DOCUMENT - FOR OFFICIAL USE ONLY
+
+PERSONNEL SECURITY INVESTIGATION
+Subject: Dr. Alex Morgan
+Department: Computer Science
+Security Clearance Level: Confidential
+Investigation Date: March 10, 2024
+
+BACKGROUND INFORMATION:
+Dr. Alex Morgan joined the university as Associate Professor of Computer Science in September 2021. Previously worked at TechCorp Industries as Senior Security Analyst (2018-2021) and GlobalSoft as Cybersecurity Consultant (2016-2018).
+
+SECURITY ASSESSMENT:
+The subject has demonstrated exceptional technical skills in cybersecurity and network administration. Has been granted access to:
+- Campus network infrastructure
+- Student information systems
+- Research lab environments
+- Administrative databases
+
+RECENT OBSERVATIONS:
+- Frequently works late hours in computer lab
+- Has requested additional system privileges
+- Submitted multiple IT support tickets regarding "research purposes"
+- Been seen accessing systems outside normal business hours
+
+SOCIAL MEDIA PRESENCE:
+LinkedIn: /in/alex-morgan-cybersec
+Twitter: @CyberAlexM
+GitHub: alexmorgan-security
+
+CONTACT INFORMATION:
+Office: Science Building, Room 314
+Phone: (555) 123-4567
+Email: a.morgan@university.edu
+Home Address: [REDACTED FOR PRIVACY]
+
+PREVIOUS EMPLOYERS:
+1. TechCorp Industries (2018-2021)
+   - Senior Security Analyst
+   - Specialized in penetration testing
+   - Left due to "seeking new challenges"
+
+2. GlobalSoft (2016-2018)
+   - Cybersecurity Consultant
+   - Worked with government contracts
+   - Security clearance verified
+
+PERSONAL REFERENCES:
+1. Prof. Sarah Wilson - Computer Science Dept.
+2. Dr. Michael Chen - Cybersecurity Research Lab
+3. Jennifer Davis - Former colleague at TechCorp
+
+INVESTIGATION NOTES:
+Subject appears to have legitimate reasons for system access. However, timing of recent activities coincides with security concerns. Recommend continued monitoring.
+
+SECURITY RECOMMENDATION:
+Continue current access level but implement additional logging for administrative actions. Schedule follow-up review in 30 days.
+
+Classification: CONFIDENTIAL
+Investigation ID: PSI-2024-0310-001
+Investigating Officer: Agent Smith, Campus Security
+
+---
+This document contains sensitive information and should not be shared outside authorized personnel.

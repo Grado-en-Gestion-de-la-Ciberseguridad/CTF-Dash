@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Shield, Users, Trophy, Settings } from 'lucide-react'
+import { Shield, Users, Trophy, Settings, FileText, Terminal } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import Navigation from './Navigation'
 import ProtectedRoute from './ProtectedRoute'
@@ -11,6 +11,36 @@ import CyberUFVLogo from './components/CyberUFVLogo'
 
 function HomePage() {
   const { user, isAdmin, isStaff, isTeam } = useAuth()
+  const [konamiUnlocked, setKonamiUnlocked] = useState(false)
+  const [konamiSequence, setKonamiSequence] = useState<string[]>([])
+
+  // Konami code detection
+  useEffect(() => {
+    const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA']
+    
+    const handleKeyPress = (e: KeyboardEvent) => {
+      const newSequence = [...konamiSequence, e.code].slice(-10)
+      setKonamiSequence(newSequence)
+      
+      if (newSequence.join(',') === konamiCode.join(',')) {
+        setKonamiUnlocked(true)
+        // Show celebration effect
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUYrTp66hVFApGn+PxtmMcBjiS2e/NeSsFJHfH8N2QQAoUYrTp66hVFApGnuPxtmMcBjiS2e/NeSsFJHfH8N2QQAoUYrTp66hVFApGn+MBM')
+          audio.play().catch(() => {}) // Ignore audio play errors
+        } catch (error) {
+          // Ignore audio errors
+        }
+        
+        setTimeout(() => {
+          setKonamiSequence([])
+        }, 3000)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [konamiSequence])
 
   return (
     <>
@@ -61,6 +91,14 @@ function HomePage() {
               </div>
             </Link>
 
+            <Link href="/resources" className="group">
+              <div className="bg-slate-800/50 backdrop-blur-sm border border-green-600/30 rounded-lg p-4 sm:p-6 hover:border-green-400 transition-all duration-300 hover:glow">
+                <FileText className="h-8 w-8 sm:h-12 sm:w-12 text-green-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">Resources Hub</h3>
+                <p className="text-sm sm:text-base text-gray-400">Access guides, evidence files, and references</p>
+              </div>
+            </Link>
+
             <Link href="/leaderboard" className="group">
               <div className="bg-slate-800/50 backdrop-blur-sm border border-yellow-600/30 rounded-lg p-4 sm:p-6 hover:border-yellow-400 transition-all duration-300 hover:glow">
                 <Trophy className="h-8 w-8 sm:h-12 sm:w-12 text-yellow-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
@@ -75,6 +113,18 @@ function HomePage() {
                   <Settings className="h-12 w-12 text-purple-400 mb-4 group-hover:animate-pulse" />
                   <h3 className="text-xl font-semibold text-white mb-2">Admin Panel</h3>
                   <p className="text-gray-400">Staff access for managing the event</p>
+                </div>
+              </Link>
+            )}
+
+            {/* Hidden Terminal - Unlocked by Konami Code */}
+            {konamiUnlocked && (
+              <Link href="/terminal" className="group animate-bounce">
+                <div className="bg-black/80 backdrop-blur-sm border border-green-400/50 rounded-lg p-6 hover:border-green-300 transition-all duration-300 hover:glow shadow-green-400/20 shadow-lg">
+                  <Terminal className="h-12 w-12 text-green-400 mb-4 group-hover:animate-pulse" />
+                  <h3 className="text-xl font-semibold text-green-400 mb-2">🎮 Secret Terminal</h3>
+                  <p className="text-green-300">KONAMI CODE ACTIVATED! Hidden terminal access unlocked!</p>
+                  <p className="text-xs text-green-500 mt-2">Find secret phrases for bonus points! 🕵️</p>
                 </div>
               </Link>
             )}
@@ -106,6 +156,16 @@ function HomePage() {
           {/* Footer */}
           <footer className="text-center mt-12 text-gray-400">
             <p>&copy; 2025 Campus Security CTF Event. Good luck, investigators!</p>
+            {!konamiUnlocked && (
+              <p className="text-xs mt-2 text-gray-500">
+                💡 Hint: Classic gamers might know a special sequence of keys... ⬆️⬆️⬇️⬇️⬅️➡️⬅️➡️🅱️🅰️
+              </p>
+            )}
+            {konamiUnlocked && (
+              <p className="text-xs mt-2 text-green-400 animate-pulse">
+                🎮 KONAMI CODE MASTER! The secret terminal awaits your investigation...
+              </p>
+            )}
           </footer>
         </div>
       </main>
