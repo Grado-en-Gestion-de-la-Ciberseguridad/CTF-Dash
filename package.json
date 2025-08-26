@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "postbuild": "node -e \"const fs=require('fs'); const path=require('path'); const s='.next/standalone'; if (fs.existsSync('.next/static')) { fs.mkdirSync(path.join(s,'.next'),{recursive:true}); try{fs.rmSync(path.join(s,'.next','static'),{recursive:true,force:true});}catch(e){} fs.cpSync('.next/static', path.join(s,'.next','static'), { recursive: true }); } if (fs.existsSync('public')) { try{fs.rmSync(path.join(s,'public'), { recursive: true, force: true });}catch(e){} fs.cpSync('public', path.join(s,'public'), { recursive: true }); }\"",
+    "start": "HOST=${HOST:-0.0.0.0} PORT=${PORT:-3000} node .next/standalone/server.js",
+    "start:prod": "HOST=${HOST:-0.0.0.0} PORT=${PORT:-3000} node .next/standalone/server.js",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },

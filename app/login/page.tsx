@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Shield, User, Lock, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../AuthContext'
 import CyberUFVLogo from '../components/CyberUFVLogo'
+import { useLang } from '../LanguageContext'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
+  const { t, locale, setLocale } = useLang()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,10 +27,10 @@ export default function LoginPage() {
       if (success) {
         router.push('/')
       } else {
-        setError('Invalid username or password')
+        setError(t('login.errorInvalid'))
       }
     } catch (err) {
-      setError('Login failed. Please try again.')
+      setError(t('login.errorFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -39,19 +41,27 @@ export default function LoginPage() {
       <div className="bg-slate-800/80 backdrop-blur-sm border border-cyber-600/30 rounded-lg p-4 sm:p-8 w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
+          <div className="flex justify-end mb-2">
+            <button
+              type="button"
+              aria-label={t('nav.language')}
+              onClick={() => setLocale(locale === 'es' ? 'en' : 'es')}
+              className="px-2 py-1 text-xs rounded bg-slate-700 text-gray-200 hover:bg-slate-600 border border-slate-500"
+            >
+              {locale === 'es' ? t('nav.en') : t('nav.es')}
+            </button>
+          </div>
           <div className="flex items-center justify-center mb-4">
             <CyberUFVLogo size="lg" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">CTF Dashboard</h1>
-          <p className="text-gray-400 text-sm sm:text-base">Enter your credentials to access the system</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{t('login.title')}</h1>
+          <p className="text-gray-400 text-sm sm:text-base">{t('login.subtitle')}</p>
         </div>
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Username / Team Name
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t('login.usernameLabel')}</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
               <input
@@ -59,16 +69,14 @@ export default function LoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-slate-700 text-white pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-lg border border-gray-600 focus:border-cyber-400 focus:outline-none transition-colors text-sm sm:text-base"
-                placeholder="Enter username or team name"
+                placeholder={t('login.usernamePlaceholder')}
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t('login.passwordLabel')}</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
               <input
@@ -76,7 +84,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-slate-700 text-white pl-9 sm:pl-10 pr-10 sm:pr-12 py-2.5 sm:py-3 rounded-lg border border-gray-600 focus:border-cyber-400 focus:outline-none transition-colors text-sm sm:text-base"
-                placeholder="Enter password"
+                placeholder={t('login.passwordPlaceholder')}
                 required
               />
               <button
@@ -103,10 +111,10 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
-                Logging in...
+                {t('login.loggingIn')}
               </>
             ) : (
-              'Login'
+              t('login.login')
             )}
           </button>
         </form>

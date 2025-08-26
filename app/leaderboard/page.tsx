@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Trophy, ArrowLeft, Medal, Users, Target, Clock } from 'lucide-react'
 import { Team, Submission, TeamProgress } from '../types'
-import { useAuth } from '../AuthContext'
 import Navigation from '../Navigation'
-import ProtectedRoute from '../ProtectedRoute'
 
 function LeaderboardPageContent() {
   const [teams, setTeams] = useState<Team[]>([])
@@ -24,7 +22,7 @@ function LeaderboardPageContent() {
       if (teamsResponse.ok) {
         const teamsData = await teamsResponse.json()
         console.log('Loaded teams:', teamsData)
-        setTeams(teamsData)
+        setTeams(Array.isArray(teamsData) ? teamsData : (teamsData.teams || []))
       } else {
         console.error('Failed to load teams:', teamsResponse.status)
       }
@@ -292,8 +290,6 @@ function LeaderboardPageContent() {
 
 export default function LeaderboardPage() {
   return (
-    <ProtectedRoute>
-      <LeaderboardPageContent />
-    </ProtectedRoute>
+    <LeaderboardPageContent />
   )
 }

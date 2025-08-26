@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './AuthContext'
+import { useLang } from './LanguageContext'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -17,6 +18,7 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuth()
   const router = useRouter()
+  const { t } = useLang()
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -42,7 +44,7 @@ export default function ProtectedRoute({
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 cyber-grid flex items-center justify-center">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyber-400 mx-auto mb-4"></div>
-          <p>Checking authentication...</p>
+          <p>{t('protected.checkingAuth')}</p>
         </div>
       </div>
     )
@@ -53,7 +55,7 @@ export default function ProtectedRoute({
       return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 cyber-grid flex items-center justify-center">
           <div className="text-white text-center">
-            <p>Access denied. Staff privileges required.</p>
+            <p>{t('protected.accessDeniedStaff')}</p>
           </div>
         </div>
       )

@@ -3,20 +3,24 @@
 This page can be accessed in multiple ways:
 
 ## Direct Access
+
 - URL: `/terminal` - Direct access to the hidden terminal
 
 ## Easter Egg Discovery Methods
 
 ### Method 1: Konami Code on Main Page
+
 - Go to the main dashboard (`/`)
 - Enter the Konami Code: ↑↑↓↓←→←→BA
 - This will reveal a hidden link to the terminal
 
 ### Method 2: Hidden in Resources
+
 - Look for references in the investigation documents
 - Terminal access hints are embedded in evidence files
 
 ### Method 3: Admin Panel
+
 - Staff members can access directly from admin panel
 - Useful for demonstrating to participants
 
@@ -29,7 +33,7 @@ The terminal contains multiple Easter eggs with secret phrases that participants
    - References The Matrix theme
 
 2. **HIDEOUT_COORDINATES_FOUND** - 75 points
-   - Found in `.secret_diary` 
+   - Found in `.secret_diary`
    - Contains Dr. Morgan's hideout location
 
 3. **I_AM_THE_ONE** - 100 points
@@ -47,6 +51,7 @@ The terminal contains multiple Easter eggs with secret phrases that participants
 ## Usage Instructions for Staff
 
 When participants approach with secret phrases:
+
 1. Verify the phrase exactly as shown above
 2. Award the corresponding bonus points
 3. Mark it as completed in your tracking system

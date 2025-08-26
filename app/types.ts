@@ -31,6 +31,7 @@ export interface AuthContextType {
   isAdmin: boolean;
   isStaff: boolean;
   isTeam: boolean;
+  isInitialized: boolean;
 }
 
 export interface Challenge {

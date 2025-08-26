@@ -67,18 +67,21 @@ node scripts/init-db.js
 ## 🔐 Default Credentials
 
 ### Admin Account
+
 - **Username:** `ctf_admin`
 - **Password:** `SecureAdmin2025!`
 - **Role:** Administrator
 - **Permissions:** Full access to all features, team management, challenge management
 
 ### Staff Account
+
 - **Username:** `staff1`
 - **Password:** `StaffPass123!`
 - **Role:** Staff
 - **Permissions:** View submissions, manage teams, moderate challenges
 
 ### Team Registration
+
 - Teams can register themselves through the `/teams` page
 - Team names must be unique
 - Passwords are automatically hashed using bcrypt
@@ -107,6 +110,7 @@ sudo nano /etc/systemd/system/ctf-dashboard.service
 ```
 
 **Systemd Service Configuration:**
+
 ```ini
 [Unit]
 Description=CTF Dashboard Application
@@ -138,6 +142,7 @@ sudo nano /etc/nginx/sites-available/ctf-dashboard
 ```
 
 **Nginx Configuration:**
+
 ```nginx
 server {
     listen 80;
@@ -276,12 +281,14 @@ The application uses SQLite by default. For production deployments:
 ## 🛡️ Security Considerations
 
 ### 1. Change Default Passwords
+
 ```bash
 # After deployment, immediately change default passwords through the admin panel
 # Or use the API to update credentials
 ```
 
 ### 2. SSL/TLS Configuration
+
 ```bash
 # Use Let's Encrypt for free SSL certificates
 sudo apt install certbot python3-certbot-nginx
@@ -289,6 +296,7 @@ sudo certbot --nginx -d your-domain.com
 ```
 
 ### 3. Firewall Configuration
+
 ```bash
 # Configure UFW (Ubuntu)
 sudo ufw allow 22
@@ -298,6 +306,7 @@ sudo ufw enable
 ```
 
 ### 4. Database Security
+
 - Ensure database files are not publicly accessible
 - Regular backups to secure location
 - Consider encryption at rest for sensitive data
@@ -305,6 +314,7 @@ sudo ufw enable
 ## 📊 Monitoring and Maintenance
 
 ### 1. Application Logs
+
 ```bash
 # View application logs
 sudo journalctl -u ctf-dashboard -f
@@ -314,6 +324,7 @@ docker-compose logs -f ctf-dashboard
 ```
 
 ### 2. Database Maintenance
+
 ```bash
 # Backup database
 cp data/ctf.db data/ctf-backup-$(date +%Y%m%d).db
@@ -323,6 +334,7 @@ sqlite3 data/ctf.db "PRAGMA integrity_check;"
 ```
 
 ### 3. Performance Monitoring
+
 ```bash
 # Check system resources
 htop
@@ -336,6 +348,7 @@ sudo systemctl status ctf-dashboard
 ## 🔄 Updates and Maintenance
 
 ### 1. Application Updates
+
 ```bash
 # Pull latest changes
 git pull origin main
@@ -351,6 +364,7 @@ sudo systemctl restart ctf-dashboard
 ```
 
 ### 2. Database Migrations
+
 ```bash
 # Run any pending migrations
 npm run db:migrate
@@ -364,6 +378,7 @@ cp data/ctf.db data/ctf-backup-before-update.db
 ### Common Issues
 
 1. **Database Connection Error**
+
    ```bash
    # Check database file permissions
    ls -la data/ctf.db
@@ -373,6 +388,7 @@ cp data/ctf.db data/ctf-backup-before-update.db
    ```
 
 2. **Port Already in Use**
+
    ```bash
    # Find process using port 3000
    sudo netstat -tlnp | grep :3000
@@ -382,12 +398,14 @@ cp data/ctf.db data/ctf-backup-before-update.db
    ```
 
 3. **Authentication Issues**
+
    ```bash
    # Reset admin password via database
    sqlite3 data/ctf.db "UPDATE users SET password_hash = '<new-hash>' WHERE username = 'ctf_admin';"
    ```
 
 4. **Permission Denied**
+
    ```bash
    # Fix file permissions
    sudo chown -R www-data:www-data /opt/ctf-dashboard
