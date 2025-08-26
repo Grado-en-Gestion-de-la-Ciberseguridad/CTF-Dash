@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, Lock, Eye, Zap } from 'lucide-react';
+import { useAuth } from '../AuthContext';
 
 interface TerminalCommand {
   command: string;
@@ -17,8 +18,44 @@ export default function HiddenTerminalPage() {
   const [currentDirectory, setCurrentDirectory] = useState('/home/investigator');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [discoveredSecrets, setDiscoveredSecrets] = useState<string[]>([]);
+  const [claimedSecrets, setClaimedSecrets] = useState<Record<string, 'pending' | 'claimed' | 'duplicate' | 'error'>>({});
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { user, isTeam } = useAuth();
+
+  // Award bonus points for a discovered terminal secret
+  const awardBonus = async (secretPhrase: string, points: number) => {
+    const challengeId = `egg/terminal/${secretPhrase}`;
+    if (!isTeam || !user?.teamId) {
+      setClaimedSecrets((prev) => ({ ...prev, [challengeId]: 'error' }));
+      return;
+    }
+    // prevent duplicate client calls
+    if (claimedSecrets[challengeId] === 'claimed' || claimedSecrets[challengeId] === 'duplicate') return;
+    setClaimedSecrets((prev) => ({ ...prev, [challengeId]: 'pending' }));
+    try {
+      const res = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamId: user.teamId,
+          challengeId,
+          answer: secretPhrase,
+          status: 'correct',
+          points,
+          penalty: 0,
+        }),
+      });
+      if (res.status === 409) {
+        setClaimedSecrets((prev) => ({ ...prev, [challengeId]: 'duplicate' }));
+        return;
+      }
+      if (!res.ok) throw new Error('Failed');
+      setClaimedSecrets((prev) => ({ ...prev, [challengeId]: 'claimed' }));
+    } catch (e) {
+      setClaimedSecrets((prev) => ({ ...prev, [challengeId]: 'error' }));
+    }
+  };
 
   // Easter egg commands and responses
   const commands: Record<string, TerminalCommand> = {
@@ -285,6 +322,10 @@ export default function HiddenTerminalPage() {
       if (commandData.isSecret && commandData.secretPhrase) {
         if (!discoveredSecrets.includes(commandData.secretPhrase)) {
           setDiscoveredSecrets(prev => [...prev, commandData.secretPhrase!]);
+          // Try to award points to logged-in team
+          if (typeof commandData.points === 'number') {
+            awardBonus(commandData.secretPhrase, commandData.points);
+          }
         }
       }
 
@@ -414,6 +455,20 @@ export default function HiddenTerminalPage() {
                   {secret === 'OPERATION_DIGITAL_HEIST' && '(+150 points)'}
                   {secret === 'UP_UP_DOWN_DOWN_LEFT_RIGHT_LEFT_RIGHT_B_A' && '(+200 points)'}
                 </span>
+                {isTeam ? (
+                  <span className="ml-2 text-xs text-gray-400">
+                    {(() => {
+                      const status = claimedSecrets[`egg/terminal/${secret}`];
+                      if (status === 'claimed') return '✔ credited';
+                      if (status === 'duplicate') return '✔ already credited';
+                      if (status === 'pending') return '… crediting';
+                      if (status === 'error') return 'login as team to claim';
+                      return '';
+                    })()}
+                  </span>
+                ) : (
+                  <span className="ml-2 text-xs text-gray-400">login as team to claim</span>
+                )}
               </div>
             ))}
             <p className="mt-2 text-yellow-400 text-xs">💡 Screenshot this as proof!</p>

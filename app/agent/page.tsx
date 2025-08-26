@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Eye, EyeOff, Zap, Star, Gift, Trophy, Skull, Heart } from 'lucide-react';
+import { useAuth } from '../AuthContext';
 
 export default function SecretAgentPage() {
   const [agentCode, setAgentCode] = useState('');
@@ -9,6 +10,8 @@ export default function SecretAgentPage() {
   const [discoveredMissions, setDiscoveredMissions] = useState<string[]>([]);
   const [currentMission, setCurrentMission] = useState<string | null>(null);
   const [points, setPoints] = useState(0);
+  const [claimStatus, setClaimStatus] = useState<Record<string, 'pending' | 'claimed' | 'duplicate' | 'error'>>({});
+  const { user, isTeam } = useAuth();
 
   const agentMissions = {
     'AGENT_007': {
@@ -45,6 +48,33 @@ export default function SecretAgentPage() {
       if (!discoveredMissions.includes(agentCode.toUpperCase())) {
         setDiscoveredMissions(prev => [...prev, agentCode.toUpperCase()]);
         setPoints(prev => prev + mission.points);
+        // Attempt to persist submission for team users
+        const challengeId = `egg/agent/${mission.secretPhrase}`;
+        if (isTeam && user?.teamId) {
+          setClaimStatus((prev) => ({ ...prev, [challengeId]: 'pending' }));
+          fetch('/api/submissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              teamId: user.teamId,
+              challengeId,
+              answer: mission.secretPhrase,
+              status: 'correct',
+              points: mission.points,
+              penalty: 0,
+            }),
+          }).then(async (res) => {
+            if (res.status === 409) {
+              setClaimStatus((prev) => ({ ...prev, [challengeId]: 'duplicate' }));
+            } else if (res.ok) {
+              setClaimStatus((prev) => ({ ...prev, [challengeId]: 'claimed' }));
+            } else {
+              setClaimStatus((prev) => ({ ...prev, [challengeId]: 'error' }));
+            }
+          }).catch(() => {
+            setClaimStatus((prev) => ({ ...prev, [challengeId]: 'error' }));
+          });
+        }
       }
     }
   };
@@ -139,6 +169,16 @@ export default function SecretAgentPage() {
                   </div>
                   <p className="text-sm text-gray-300">
                     Secret Phrase: &quot;{agentMissions[mission as keyof typeof agentMissions].secretPhrase}&quot;
+                    {(() => {
+                      const phrase = agentMissions[mission as keyof typeof agentMissions].secretPhrase;
+                      const status = claimStatus[`egg/agent/${phrase}`];
+                      if (!isTeam) return <span className="ml-2 text-xs text-gray-400"> login as team to claim</span>;
+                      if (status === 'pending') return <span className="ml-2 text-xs text-gray-400"> … crediting</span>;
+                      if (status === 'claimed') return <span className="ml-2 text-xs text-green-400"> ✔ credited</span>;
+                      if (status === 'duplicate') return <span className="ml-2 text-xs text-green-400"> ✔ already credited</span>;
+                      if (status === 'error') return <span className="ml-2 text-xs text-red-400"> error</span>;
+                      return null;
+                    })()}
                   </p>
                 </div>
               ))}

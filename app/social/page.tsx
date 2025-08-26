@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Users, Phone, Mail, MapPin, Coffee, Camera, Lock, Unlock, Search, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../AuthContext';
 
 export default function SocialEngineeringPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,6 +10,8 @@ export default function SocialEngineeringPage() {
   const [discoveredSecret, setDiscoveredSecret] = useState(false);
   const [points, setPoints] = useState(0);
   const [accessLevel, setAccessLevel] = useState('Guest');
+  const [claimStatus, setClaimStatus] = useState<'idle' | 'pending' | 'claimed' | 'duplicate' | 'error'>('idle');
+  const { user, isTeam } = useAuth();
 
   const employees = [
     {
@@ -109,6 +112,27 @@ export default function SocialEngineeringPage() {
       setDiscoveredSecret(true);
       setPoints(150);
       setAccessLevel('Social Engineer');
+      // Attempt to persist for team users
+      const challengeId = 'egg/social/HUMAN_IS_THE_WEAKNESS';
+      if (isTeam && user?.teamId) {
+        setClaimStatus('pending');
+        fetch('/api/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            teamId: user.teamId,
+            challengeId,
+            answer: 'HUMAN_IS_THE_WEAKNESS',
+            status: 'correct',
+            points: 150,
+            penalty: 0,
+          }),
+        }).then(async (res) => {
+          if (res.status === 409) setClaimStatus('duplicate');
+          else if (res.ok) setClaimStatus('claimed');
+          else setClaimStatus('error');
+        }).catch(() => setClaimStatus('error'));
+      }
     }
   };
 
@@ -274,6 +298,16 @@ export default function SocialEngineeringPage() {
               </p>
               <p className="text-gray-400 text-sm mt-2">
                 Tell this to staff for +150 bonus points!
+                {isTeam ? (
+                  <span className="ml-2 text-xs">
+                    {claimStatus === 'pending' && '… crediting'}
+                    {claimStatus === 'claimed' && '✔ credited'}
+                    {claimStatus === 'duplicate' && '✔ already credited'}
+                    {claimStatus === 'error' && ' error'}
+                  </span>
+                ) : (
+                  <span className="ml-2 text-xs"> login as team to claim</span>
+                )}
               </p>
             </div>
             <p className="text-gray-300 text-sm">

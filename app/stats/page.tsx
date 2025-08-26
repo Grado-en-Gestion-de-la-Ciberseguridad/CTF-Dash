@@ -36,8 +36,10 @@ export default function PublicStatsPage() {
   const [stats, setStats] = useState<PublicStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     loadStats()
     // Refresh stats every 30 seconds
     const interval = setInterval(loadStats, 30000)
@@ -158,7 +160,9 @@ export default function PublicStatsPage() {
               <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400 mr-2 sm:mr-3" />
               <div>
                 <p className="text-gray-400 text-xs sm:text-sm">Last Updated</p>
-                <p className="text-lg font-bold text-white">{new Date().toLocaleTimeString()}</p>
+                <p className="text-lg font-bold text-white" suppressHydrationWarning>
+                  {mounted ? new Date().toLocaleTimeString() : ''}
+                </p>
               </div>
             </div>
           </div>

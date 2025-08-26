@@ -2,12 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { Coffee, Wifi, MessageSquare, Users, Clock, Zap } from 'lucide-react';
+import { useAuth } from '../AuthContext';
 
 export default function HackerCafePage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentMessage, setCurrentMessage] = useState(0);
   const [chatMessages, setChatMessages] = useState<Array<{id: number, user: string, message: string, time: string}>>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [mounted, setMounted] = useState(false);
+  const { user, isTeam } = useAuth();
+  const [claimStatus, setClaimStatus] = useState<'idle' | 'pending' | 'claimed' | 'duplicate' | 'error'>('idle');
+  const [creditMessage, setCreditMessage] = useState<string | null>(null);
+  const [creditType, setCreditType] = useState<'success' | 'info' | 'error'>('success');
+
+  const secretPhrase = 'COFFEE_FUELED_HACKER';
+  const secretPoints = 75;
+
+  const normalize = (s: string) => s.replace(/["'“”‘’]/g, '').trim().toLowerCase();
 
   // Rotating hacker quotes/messages
   const hackerMessages = [
@@ -22,6 +33,7 @@ export default function HackerCafePage() {
   ];
 
   useEffect(() => {
+    setMounted(true);
     // Simulated chat messages from "other hackers"
     const initialChatMessages = [
       { id: 1, user: "NeoMatrix", message: "Anyone find the hidden terminal yet? 🕵️", time: "14:32" },
@@ -72,6 +84,13 @@ export default function HackerCafePage() {
     };
   }, [hackerMessages.length, chatMessages.length]);
 
+  // Auto-dismiss credit messages
+  useEffect(() => {
+    if (!creditMessage) return;
+    const t = setTimeout(() => setCreditMessage(null), 5000);
+    return () => clearTimeout(t);
+  }, [creditMessage]);
+
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       const message = {
@@ -81,6 +100,46 @@ export default function HackerCafePage() {
         time: new Date().toLocaleTimeString().slice(0, 5)
       };
       setChatMessages(prev => [...prev.slice(-10), message]);
+      // Detect secret phrase in message
+      const msgNorm = normalize(newMessage);
+      const phraseNorm = normalize(secretPhrase);
+      const containsSecret = msgNorm === phraseNorm || msgNorm.includes(phraseNorm);
+      if (containsSecret) {
+        if (isTeam && user?.teamId) {
+          // Submit bonus points for the cafe secret
+          setClaimStatus((prev) => (prev === 'claimed' || prev === 'duplicate') ? prev : 'pending');
+          fetch('/api/submissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              teamId: user.teamId,
+              challengeId: `egg/cafe/${secretPhrase}`,
+              answer: secretPhrase,
+              status: 'correct',
+              points: secretPoints,
+              penalty: 0,
+            }),
+          }).then((res) => {
+            if (res.status === 409) {
+              setClaimStatus('duplicate');
+              setCreditType('info');
+              setCreditMessage(`✔ Already credited previously for "${secretPhrase}".`);
+            } else if (res.ok) {
+              setClaimStatus('claimed');
+              setCreditType('success');
+              setCreditMessage(`✔ Your team has been credited +${secretPoints} points for "${secretPhrase}".`);
+            } else {
+              setClaimStatus('error');
+              setCreditType('error');
+              setCreditMessage('We could not credit your team. Please ensure you are logged in and try again.');
+            }
+          }).catch(() => setClaimStatus('error'));
+        } else {
+          setClaimStatus('error');
+          setCreditType('error');
+          setCreditMessage('Login as a team to claim points for the secret phrase.');
+        }
+      }
       setNewMessage('');
 
       // Auto-reply with CTF hints
@@ -123,7 +182,9 @@ export default function HackerCafePage() {
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-400" />
-              <span className="text-amber-300">{currentTime.toLocaleTimeString()}</span>
+              <span className="text-amber-300" suppressHydrationWarning>
+                {mounted ? currentTime.toLocaleTimeString() : ''}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-blue-400" />
@@ -132,6 +193,18 @@ export default function HackerCafePage() {
           </div>
         </div>
       </div>
+      {creditMessage && (
+        <div className="max-w-6xl mx-auto px-6 pt-3">
+          <div className={
+            `rounded-md p-3 text-sm border ` +
+            (creditType === 'success' ? 'bg-green-900/30 border-green-500/50 text-green-200' :
+             creditType === 'info' ? 'bg-blue-900/30 border-blue-500/50 text-blue-200' :
+             'bg-red-900/30 border-red-500/50 text-red-200')
+          }>
+            {creditMessage}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto p-6 grid md:grid-cols-3 gap-6">
         {/* Left Column - Menu & Quotes */}
@@ -196,6 +269,14 @@ export default function HackerCafePage() {
               </p>
               <p className="text-purple-300 text-xs">
                 +75 bonus points! ☕
+                <span className="ml-2 text-[10px] opacity-80">
+                  {isTeam ? (
+                    claimStatus === 'pending' ? '… crediting' :
+                    claimStatus === 'claimed' ? '✔ credited' :
+                    claimStatus === 'duplicate' ? '✔ already credited' :
+                    claimStatus === 'error' ? 'login as team to claim' : ''
+                  ) : ' login as team to claim'}
+                </span>
               </p>
             </div>
           </div>

@@ -19,8 +19,10 @@ export default function ProtectedRoute({
   const { isAuthenticated, user } = useAuth()
   const router = useRouter()
   const { t } = useLang()
+  const { isInitialized } = useAuth()
 
   useEffect(() => {
+    if (!isInitialized) return
     if (!isAuthenticated) {
       router.push(fallbackPath)
       return
@@ -37,7 +39,18 @@ export default function ProtectedRoute({
         return
       }
     }
-  }, [isAuthenticated, user, requireRole, router, fallbackPath])
+  }, [isInitialized, isAuthenticated, user, requireRole, router, fallbackPath])
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 cyber-grid flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyber-400 mx-auto mb-4"></div>
+          <p>{t('protected.checkingAuth')}</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!isAuthenticated) {
     return (

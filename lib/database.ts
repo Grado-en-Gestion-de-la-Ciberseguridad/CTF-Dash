@@ -6,10 +6,34 @@ import path from 'path'
 // Database connection
 let db: Database | null = null
 
+function resolveDbPath() {
+  const envPath = process.env.CTF_DB_PATH || process.env.DATABASE_PATH
+  if (envPath) return envPath
+
+  const candidates = [
+    path.join(process.cwd(), 'data', 'ctf.db'),
+    path.join(process.cwd(), '..', 'data', 'ctf.db'),
+    path.join(process.cwd(), '..', '..', 'data', 'ctf.db'),
+    path.join(__dirname || '.', 'data', 'ctf.db'),
+    path.join(__dirname || '.', '..', 'data', 'ctf.db'),
+    path.join(__dirname || '.', '..', '..', 'data', 'ctf.db')
+  ]
+
+  const fs = require('fs')
+  for (const candidate of candidates) {
+    const dir = path.dirname(candidate)
+    if (fs.existsSync(dir)) {
+      return candidate
+    }
+  }
+  // Fallback to process cwd data dir
+  return path.join(process.cwd(), 'data', 'ctf.db')
+}
+
 export async function initDatabase() {
   if (db) return db
 
-  const dbPath = path.join(process.cwd(), 'data', 'ctf.db')
+  const dbPath = resolveDbPath()
   
   // Ensure data directory exists
   const fs = require('fs')
@@ -96,9 +120,8 @@ async function createTables() {
   // Recalculate team scores after removing duplicates
   await db.exec(`
     UPDATE teams SET total_score = (
-      SELECT COALESCE(SUM(points) - SUM(penalty), 0)
-      FROM submissions 
-      WHERE team_id = teams.id AND status = 'correct'
+      COALESCE((SELECT SUM(points) FROM submissions WHERE team_id = teams.id AND status = 'correct'), 0)
+      - COALESCE((SELECT SUM(penalty) FROM submissions WHERE team_id = teams.id AND status = 'incorrect'), 0)
     )
   `)
   
@@ -388,6 +411,11 @@ export async function getPublicStats() {
     LIMIT 50
   `)
   
+  // True total submissions count (all statuses)
+  const totalSubmissionsRow = await database.get(`
+    SELECT COUNT(*) as cnt FROM submissions
+  `)
+  
   // Get challenge stats
   const challengeStats = await database.all(`
     SELECT challenge_id, 
@@ -403,7 +431,7 @@ export async function getPublicStats() {
     recentSubmissions,
     challengeStats,
     totalTeams: teams.length,
-    totalSubmissions: recentSubmissions.length
+    totalSubmissions: totalSubmissionsRow?.cnt || 0
   }
 }
 

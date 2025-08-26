@@ -17,7 +17,7 @@ This document lists the available routes (pages) and API endpoints in the CTF Da
   - Purpose: View challenge rooms and submit answers.
 
 - `/leaderboard`
-  - Access: Authenticated (any role)
+  - Access: Public
   - Purpose: View team rankings and progress.
 
 - `/resources`

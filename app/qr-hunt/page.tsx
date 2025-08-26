@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { QrCode, Camera, Gift, Eye, Star } from 'lucide-react';
+import { useAuth } from '../AuthContext';
 
 export default function QRHuntPage() {
   const [scannedCodes, setScannedCodes] = useState<string[]>([]);
   const [currentCode, setCurrentCode] = useState('');
+  const [claimStatus, setClaimStatus] = useState<Record<string, 'pending' | 'claimed' | 'duplicate' | 'error'>>({});
+  const { user, isTeam } = useAuth();
 
   // Hidden QR codes and their rewards
   const qrCodes = {
@@ -45,6 +48,33 @@ export default function QRHuntPage() {
     const code = qrCodes[currentCode.toUpperCase() as keyof typeof qrCodes];
     if (code && !scannedCodes.includes(currentCode.toUpperCase())) {
       setScannedCodes(prev => [...prev, currentCode.toUpperCase()]);
+      // Try to persist for team users
+      const challengeId = `egg/qr/${currentCode.toUpperCase()}`;
+      if (isTeam && user?.teamId) {
+        setClaimStatus((prev) => ({ ...prev, [challengeId]: 'pending' }));
+        fetch('/api/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            teamId: user.teamId,
+            challengeId,
+            answer: code.phrase,
+            status: 'correct',
+            points: code.points,
+            penalty: 0,
+          }),
+        }).then(async (res) => {
+          if (res.status === 409) {
+            setClaimStatus((prev) => ({ ...prev, [challengeId]: 'duplicate' }));
+          } else if (res.ok) {
+            setClaimStatus((prev) => ({ ...prev, [challengeId]: 'claimed' }));
+          } else {
+            setClaimStatus((prev) => ({ ...prev, [challengeId]: 'error' }));
+          }
+        }).catch(() => {
+          setClaimStatus((prev) => ({ ...prev, [challengeId]: 'error' }));
+        });
+      }
       setCurrentCode('');
     }
   };
@@ -53,6 +83,37 @@ export default function QRHuntPage() {
     const qr = qrCodes[code as keyof typeof qrCodes];
     return sum + (qr?.points || 0);
   }, 0);
+
+  // Award bonus achievements based on progress
+  const totalQrCount = Object.keys(qrCodes).length;
+  const maybeAwardBonus = (id: string, answer: string, points: number) => {
+    if (!isTeam || !user?.teamId) return;
+    if (claimStatus[id] === 'claimed' || claimStatus[id] === 'duplicate' || claimStatus[id] === 'pending') return;
+    setClaimStatus((prev) => ({ ...prev, [id]: 'pending' }));
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        teamId: user.teamId,
+        challengeId: id,
+        answer,
+        status: 'correct',
+        points,
+        penalty: 0,
+      }),
+    }).then((res) => {
+      if (res.status === 409) setClaimStatus((prev) => ({ ...prev, [id]: 'duplicate' }));
+      else if (res.ok) setClaimStatus((prev) => ({ ...prev, [id]: 'claimed' }));
+      else setClaimStatus((prev) => ({ ...prev, [id]: 'error' }));
+    }).catch(() => setClaimStatus((prev) => ({ ...prev, [id]: 'error' })));
+  };
+
+  if (scannedCodes.length >= 3) {
+    maybeAwardBonus('egg/qr/bonus/explorer', 'QR_CODE_HUNTER', 50);
+  }
+  if (scannedCodes.length === totalQrCount && totalQrCount > 0) {
+    maybeAwardBonus('egg/qr/bonus/master', 'TREASURE_MASTER_2024', 100);
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white p-6">
@@ -101,7 +162,7 @@ export default function QRHuntPage() {
               <Star className="w-5 h-5" />
               Discovered QR Codes ({scannedCodes.length}/{Object.keys(qrCodes).length})
             </h3>
-            {scannedCodes.map(code => {
+              {scannedCodes.map(code => {
               const qr = qrCodes[code as keyof typeof qrCodes];
               return (
                 <div key={code} className="bg-gray-800/50 rounded p-3 mb-2">
@@ -111,6 +172,15 @@ export default function QRHuntPage() {
                   </div>
                   <p className="text-sm text-cyan-300">
                     Secret phrase: &quot;{qr.phrase}&quot;
+                      {(() => {
+                        const status = claimStatus[`egg/qr/${code}`];
+                        if (!isTeam) return <span className="ml-2 text-xs text-gray-400"> login as team to claim</span>;
+                        if (status === 'pending') return <span className="ml-2 text-xs text-gray-400"> … crediting</span>;
+                        if (status === 'claimed') return <span className="ml-2 text-xs text-green-400"> ✔ credited</span>;
+                        if (status === 'duplicate') return <span className="ml-2 text-xs text-green-400"> ✔ already credited</span>;
+                        if (status === 'error') return <span className="ml-2 text-xs text-red-400"> error</span>;
+                        return null;
+                      })()}
                   </p>
                 </div>
               );
