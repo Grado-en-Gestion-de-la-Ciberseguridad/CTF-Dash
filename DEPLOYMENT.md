@@ -15,7 +15,7 @@ Before deploying the CTF Dashboard, ensure you have the following installed:
 ```bash
 # Clone the repository
 git clone <your-repository-url>
-cd CTF_Dash
+cd CTF-Dash
 
 # Install dependencies
 npm install

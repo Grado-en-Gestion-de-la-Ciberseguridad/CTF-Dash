@@ -18,7 +18,7 @@ A cybersecurity Capture the Flag (CTF) event dashboard built with Next.js and Ty
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd CTF_Dash
+cd CTF-Dash
 
 # Install dependencies
 npm install
@@ -92,7 +92,7 @@ npm start
 ## 📁 Project Structure
 
 ```
-CTF_Dash/
+CTF-Dash/
 ├── app/                    # Next.js app directory
 │   ├── api/               # API routes
 │   ├── challenges/        # Challenge pages
