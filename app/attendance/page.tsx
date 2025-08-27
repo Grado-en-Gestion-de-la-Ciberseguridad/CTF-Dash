@@ -45,7 +45,7 @@ export default function AttendancePage() {
       }
     }
     load()
-  }, [])
+  }, [t])
 
   const requestLocation = React.useCallback(() => {
     setResult(null)
@@ -62,7 +62,7 @@ export default function AttendancePage() {
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     )
-  }, [])
+  }, [t])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

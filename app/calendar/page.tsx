@@ -42,7 +42,7 @@ export default function EventsCalendarPage() {
       }
     }
     load()
-  }, [])
+  }, [t])
 
   const onRegister = async (e: React.FormEvent) => {
     e.preventDefault()

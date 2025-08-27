@@ -332,10 +332,10 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
       <div className="mt-3 text-[12px] text-gray-300 space-y-1">
         <div>Tips:</div>
         <ul className="list-disc list-inside text-gray-400">
-          <li>Use the calendar pickers in your local time; times are stored as ISO automatically.</li>
-          <li>Geofence format: "lat, lon, radius" (meters). Example: 49.0490, -122.2850, 150</li>
-          <li>If no geofence is set, check-ins will be rejected until a location is configured for the event.</li>
-          <li>Click "Use my location" to auto-fill lat/lon; adjust the radius as needed.</li>
+            <li>Use the calendar pickers in your local time; times are stored as ISO automatically.</li>
+            <li>Geofence format: &quot;lat, lon, radius&quot; (meters). Example: 49.0490, -122.2850, 150</li>
+            <li>If no geofence is set, check-ins will be rejected until a location is configured for the event.</li>
+            <li>Click &quot;Use my location&quot; to auto-fill lat/lon; adjust the radius as needed.</li>
         </ul>
       </div>
       {msg && <div className="mt-2 text-sm text-gray-300">{msg}</div>}

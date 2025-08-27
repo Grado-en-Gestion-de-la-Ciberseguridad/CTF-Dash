@@ -45,7 +45,7 @@ export default function EventPage({ params }: { params: { id: string } }) {
       }
     }
     load()
-  }, [id])
+  }, [id, t])
 
   const now = new Date()
   const inRange = (a?: string, b?: string) => {
