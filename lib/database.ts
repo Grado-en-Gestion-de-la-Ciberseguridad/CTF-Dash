@@ -52,6 +52,8 @@ export async function initDatabase() {
   
   // Insert default admin users
   await insertDefaultUsers()
+  // Insert default events (public attendance)
+  await insertDefaultEvents()
 
   return db
 }
@@ -156,6 +158,46 @@ async function createTables() {
     CREATE INDEX IF NOT EXISTS idx_attempts_team_challenge 
     ON challenge_attempts (team_id, challenge_id);
   `)
+
+  // Events table (for public attendance tracking)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS events (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      start_time DATETIME,
+      end_time DATETIME,
+      location_name TEXT,
+      latitude REAL,
+      longitude REAL,
+      radius_meters INTEGER DEFAULT 150,
+      is_active BOOLEAN DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  // Attendance table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS attendance (
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      attendee_id TEXT NOT NULL,
+      latitude REAL,
+      longitude REAL,
+      accuracy REAL,
+      distance_meters REAL,
+      status TEXT NOT NULL CHECK (status IN ('accepted','rejected')),
+      reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (event_id) REFERENCES events (id)
+    )
+  `)
+
+  // Uniqueness: one attendance per email or attendee_id per event
+  await db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_att_event_email ON attendance(event_id, email);`)
+  await db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_att_event_attendee ON attendance(event_id, attendee_id);`)
 }
 
 async function insertDefaultUsers() {
@@ -181,6 +223,119 @@ async function insertDefaultUsers() {
     INSERT OR IGNORE INTO users (id, username, password_hash, role, name)
     VALUES (?, ?, ?, ?, ?)
   `, ['staff2', 'staff2', staff2PasswordHash, 'staff', 'Staff Member 2'])
+}
+
+async function insertDefaultEvents() {
+  if (!db) throw new Error('Database not initialized')
+  const row = await db.get(`SELECT COUNT(*) as cnt FROM events`)
+  if (row && row.cnt > 0) return
+
+  const now = Date.now()
+  const events = [
+    {
+      id: 'opening-ceremony',
+      name: 'Opening Ceremony',
+      description: 'Welcome to the CTF event! Check in to confirm attendance.',
+      start_time: new Date(now + 60 * 60 * 1000).toISOString(),
+      end_time: new Date(now + 3 * 60 * 60 * 1000).toISOString(),
+      location_name: 'Main Hall',
+      latitude: 40.7128,
+      longitude: -74.0060,
+      radius_meters: 200,
+      is_active: 1
+    },
+    {
+      id: 'workshop-cryptography',
+      name: 'Cryptography Workshop',
+      description: 'Hands-on session exploring crypto challenges.',
+      start_time: new Date(now + 4 * 60 * 60 * 1000).toISOString(),
+      end_time: new Date(now + 6 * 60 * 60 * 1000).toISOString(),
+      location_name: 'Lab A',
+      latitude: 40.7128,
+      longitude: -74.0060,
+      radius_meters: 150,
+      is_active: 1
+    }
+  ]
+
+  for (const e of events) {
+    await db.run(`
+      INSERT OR IGNORE INTO events (id, name, description, start_time, end_time, location_name, latitude, longitude, radius_meters, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [e.id, e.name, e.description, e.start_time, e.end_time, e.location_name, e.latitude, e.longitude, e.radius_meters, e.is_active])
+  }
+}
+
+// Utility: Haversine distance in meters
+function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const toRad = (v: number) => (v * Math.PI) / 180
+  const R = 6371000
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+export async function getPublicEvents() {
+  const database = await initDatabase()
+  return await database.all(`
+    SELECT id, name, description, start_time, end_time, location_name, latitude, longitude, radius_meters, is_active
+    FROM events WHERE is_active = 1 ORDER BY start_time ASC
+  `)
+}
+
+export async function getEventById(eventId: string) {
+  const database = await initDatabase()
+  return await database.get(`SELECT * FROM events WHERE id = ?`, [eventId])
+}
+
+export async function recordAttendance(params: {
+  eventId: string,
+  email: string,
+  phone: string,
+  attendeeId: string,
+  latitude: number,
+  longitude: number,
+  accuracy?: number
+}) {
+  const database = await initDatabase()
+  const event = await getEventById(params.eventId)
+  if (!event || !event.is_active) {
+    return { success: false, status: 'rejected' as const, message: 'Event not found or inactive' }
+  }
+
+  let distance: number | null = null
+  let status: 'accepted' | 'rejected' = 'rejected'
+  let reason: string | null = null
+  if (typeof event.latitude === 'number' && typeof event.longitude === 'number') {
+    distance = haversine(event.latitude, event.longitude, params.latitude, params.longitude)
+    const radius = event.radius_meters ?? 150
+    if (distance <= radius) {
+      status = 'accepted'
+    } else {
+      status = 'rejected'
+      reason = `Outside allowed radius (${Math.round(distance)}m > ${radius}m)`
+    }
+  } else {
+    reason = 'Event location not configured'
+  }
+
+  const id = `att-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+
+  try {
+    await database.run(`
+      INSERT INTO attendance (id, event_id, email, phone, attendee_id, latitude, longitude, accuracy, distance_meters, status, reason)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [id, params.eventId, params.email, params.phone, params.attendeeId, params.latitude, params.longitude, params.accuracy ?? null, distance, status, reason])
+    return { success: true, status, distance, message: status === 'accepted' ? 'Attendance recorded' : (reason || 'Attendance rejected') }
+  } catch (err: any) {
+    const msg = String(err?.message || '')
+    if (msg.includes('UNIQUE') || msg.includes('unique')) {
+      return { success: false, status: 'rejected', message: 'Already recorded for this event' }
+    }
+    throw err
+  }
 }
 
 // Team operations

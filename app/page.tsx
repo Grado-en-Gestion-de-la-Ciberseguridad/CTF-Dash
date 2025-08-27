@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Shield, Users, Trophy, Settings, FileText, Terminal } from 'lucide-react'
+import { Shield, Users, Trophy, Settings, FileText, Terminal, CalendarDays, MapPin } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import Navigation from './Navigation'
 import ProtectedRoute from './ProtectedRoute'
@@ -15,6 +15,8 @@ function HomePage() {
   const { t } = useLang()
   const [konamiUnlocked, setKonamiUnlocked] = useState(false)
   const [konamiSequence, setKonamiSequence] = useState<string[]>([])
+  const [upcoming, setUpcoming] = useState<any[]>([])
+  const [loadingEvents, setLoadingEvents] = useState(true)
 
   // Konami code detection
   useEffect(() => {
@@ -43,6 +45,21 @@ function HomePage() {
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [konamiSequence])
+
+  useEffect(() => {
+    // Load public events to showcase on home
+    const load = async () => {
+      try {
+        const res = await fetch('/api/events', { cache: 'no-store' })
+        const data = await res.json()
+        if (res.ok) {
+          setUpcoming(data.events || [])
+        }
+      } catch {}
+      setLoadingEvents(false)
+    }
+    load()
+  }, [])
 
   return (
     <>
@@ -100,6 +117,14 @@ function HomePage() {
               </div>
             </Link>
 
+            <Link href="/events" className="group">
+              <div className="bg-slate-800/50 backdrop-blur-sm border border-cyan-600/30 rounded-lg p-4 sm:p-6 hover:border-cyan-400 transition-all duration-300 hover:glow">
+                <CalendarDays className="h-8 w-8 sm:h-12 sm:w-12 text-cyan-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{t('cards.events.title')}</h3>
+                <p className="text-sm sm:text-base text-gray-400">{t('cards.events.desc')}</p>
+              </div>
+            </Link>
+
             <Link href="/leaderboard" className="group">
               <div className="bg-slate-800/50 backdrop-blur-sm border border-yellow-600/30 rounded-lg p-4 sm:p-6 hover:border-yellow-400 transition-all duration-300 hover:glow">
                 <Trophy className="h-8 w-8 sm:h-12 sm:w-12 text-yellow-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
@@ -150,6 +175,34 @@ function HomePage() {
               <div className="bg-slate-700/50 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-purple-400 mb-2">{t('events.crypto.title')}</h3>
                 <p className="text-gray-300 text-sm">{t('events.crypto.desc')}</p>
+              </div>
+            </div>
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2"><CalendarDays className="h-5 w-5 text-cyan-400" /> {t('homeEvents.title')}</h3>
+              {loadingEvents ? (
+                <div className="text-sm text-gray-400">{t('calendar.loading')}</div>
+              ) : upcoming.length === 0 ? (
+                <div className="text-sm text-gray-400">{t('homeEvents.noEvents')}</div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {upcoming.slice(0, 6).map((ev: any) => (
+                    <div key={ev.id} className="bg-slate-700/50 rounded p-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-medium text-white">{ev.name}</div>
+                          {ev.description && <div className="text-xs text-gray-400">{ev.description}</div>}
+                          <div className="text-xs text-gray-500 mt-1">{t('homeEvents.reg')}: {ev.registration_start || 'n/a'} → {ev.registration_end || 'n/a'}</div>
+                          <div className="text-xs text-gray-500">{t('homeEvents.event')}: {ev.start_time || 'n/a'} → {ev.end_time || 'n/a'}</div>
+                        </div>
+                        <a className="text-cyan-300 text-xs underline" href={`/events/${encodeURIComponent(ev.id)}`} target="_blank" rel="noreferrer">{t('homeEvents.openPage')}</a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-4 flex gap-3">
+                <Link href="/calendar" className="px-3 py-2 rounded bg-cyan-700/40 text-cyan-200 border border-cyan-600/40">{t('homeEvents.viewCalendar')}</Link>
+                <Link href="/attendance" className="px-3 py-2 rounded bg-emerald-700/40 text-emerald-200 border border-emerald-600/40">{t('homeEvents.goToCheckin')}</Link>
               </div>
             </div>
           </div>

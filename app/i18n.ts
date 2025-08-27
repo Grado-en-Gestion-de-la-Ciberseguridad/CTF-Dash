@@ -10,6 +10,8 @@ export const translations = {
       language: 'Language',
       es: 'ES',
       en: 'EN',
+      attendance: 'Attendance',
+      calendar: 'Calendar',
     },
     roles: {
       admin: 'admin',
@@ -36,6 +38,10 @@ export const translations = {
         title: 'Resources Hub',
         desc: 'Access guides, evidence files, and references',
       },
+      events: {
+        title: 'Events & Check-in',
+        desc: 'Browse calendar, register, and check in',
+      },
       leaderboard: {
         title: 'Leaderboard',
         desc: 'View team rankings and progress',
@@ -49,6 +55,15 @@ export const translations = {
         desc1: 'KONAMI CODE ACTIVATED! Hidden terminal access unlocked!',
         desc2: 'Find secret phrases for bonus points! 🕵️',
       },
+    },
+    homeEvents: {
+      title: 'Upcoming Events',
+      noEvents: 'No upcoming events right now.',
+      reg: 'Reg',
+      event: 'Event',
+      openPage: 'Open Page',
+      viewCalendar: 'View calendar',
+      goToCheckin: 'Go to Check-in',
     },
     events: {
       header: 'Challenge Rooms',
@@ -91,6 +106,70 @@ export const translations = {
       checkingAuth: 'Checking authentication...',
       accessDeniedStaff: 'Access denied. Staff privileges required.',
     },
+    admin: {
+      tabs: {
+        overview: 'Overview',
+        submissions: 'Submissions',
+        answers: 'Answer Management',
+        editor: 'Challenge Editor',
+        events: 'Events & Attendance',
+      },
+      events: {
+        createUpdate: 'Create / Update Event',
+        field: {
+          id: 'id', name: 'name', description: 'description', registration_start: 'registration_start', registration_end: 'registration_end', start_time: 'start_time', end_time: 'end_time', location_name: 'location_name', latitude: 'latitude', longitude: 'longitude', radius_meters: 'radius_meters', is_active: 'is_active'
+        },
+        save: 'Save Event',
+        clear: 'Clear',
+        listTitle: 'Events',
+        refresh: 'Refresh',
+        edit: 'Edit',
+        openPage: 'Open Page',
+        addLocation: 'Add Location',
+        viewLists: 'View Lists',
+        exportCsv: 'Export CSV',
+        manualCheckin: 'Manual Check-in',
+        record: 'Record',
+        overrideWindow: 'Override Window',
+        registrations: 'Registrations',
+        attendance: 'Attendance',
+      }
+    },
+    calendar: {
+      title: 'Events Calendar',
+      subtitle: 'Register for upcoming events during the registration window and check-in onsite during the event.',
+      select: 'Select',
+      selectedEvent: 'Selected Event',
+      register: 'Register',
+      registering: 'Registering…',
+      goToCheckin: 'Go to Check-in',
+      loading: 'Loading…'
+    },
+    attendancePage: {
+      title: 'Event Attendance',
+      subtitle: 'Public check-in page. Location is verified against the event geofence. Your contact details are stored encrypted.',
+      selectEvent: 'Select Event',
+      email: 'Email',
+      phone: 'Phone',
+      attendeeId: 'University/Employee ID',
+      yourLocation: 'Your Location',
+      notCaptured: 'Not captured',
+      captureLocation: 'Capture Location',
+      recordAttendance: 'Record Attendance',
+      loading: 'Loading events…',
+      noEvents: 'No active events available right now.'
+    },
+    eventPage: {
+      registrationNotOpen: 'Registration is not open yet.',
+      registrationOpen: 'Registration is open.',
+      eventInProgress: 'Event is in progress. Check-in on site.',
+      eventEnded: 'This event has ended.',
+      register: 'Register',
+      checkin: 'Check-In',
+      captureLocation: 'Capture Location',
+      geofences: 'Geofences',
+      loading: 'Loading…'
+    }
   },
   es: {
     nav: {
@@ -99,6 +178,8 @@ export const translations = {
       language: 'Idioma',
       es: 'ES',
       en: 'EN',
+      attendance: 'Asistencia',
+      calendar: 'Calendario',
     },
     roles: {
       admin: 'administrador',
@@ -125,6 +206,10 @@ export const translations = {
         title: 'Centro de recursos',
         desc: 'Accede a guías, evidencias y referencias',
       },
+      events: {
+        title: 'Eventos y check-in',
+        desc: 'Consulta el calendario, regístrate y haz check-in',
+      },
       leaderboard: {
         title: 'Clasificación',
         desc: 'Ver clasificación y progreso',
@@ -138,6 +223,15 @@ export const translations = {
         desc1: '¡CÓDIGO KONAMI ACTIVADO! ¡Acceso a terminal oculta desbloqueado!',
         desc2: '¡Encuentra frases secretas para puntos extra! 🕵️',
       },
+    },
+    homeEvents: {
+      title: 'Próximos eventos',
+      noEvents: 'No hay eventos próximos en este momento.',
+      reg: 'Registro',
+      event: 'Evento',
+      openPage: 'Abrir página',
+      viewCalendar: 'Ver calendario',
+      goToCheckin: 'Ir al check-in',
     },
     events: {
       header: 'Salas de retos',
@@ -182,5 +276,69 @@ export const translations = {
       checkingAuth: 'Comprobando autenticación...',
       accessDeniedStaff: 'Acceso denegado. Se requieren privilegios de personal.',
     },
+    admin: {
+      tabs: {
+        overview: 'Resumen',
+        submissions: 'Envíos',
+        answers: 'Gestión de respuestas',
+        editor: 'Editor de retos',
+        events: 'Eventos y asistencia',
+      },
+      events: {
+        createUpdate: 'Crear / Actualizar evento',
+        field: {
+          id: 'id', name: 'nombre', description: 'descripción', registration_start: 'inicio_registro', registration_end: 'fin_registro', start_time: 'inicio_evento', end_time: 'fin_evento', location_name: 'lugar', latitude: 'latitud', longitude: 'longitud', radius_meters: 'radio_metros', is_active: 'activo'
+        },
+        save: 'Guardar evento',
+        clear: 'Limpiar',
+        listTitle: 'Eventos',
+        refresh: 'Actualizar',
+        edit: 'Editar',
+        openPage: 'Abrir página',
+        addLocation: 'Añadir ubicación',
+        viewLists: 'Ver listas',
+        exportCsv: 'Exportar CSV',
+        manualCheckin: 'Registro manual',
+        record: 'Registrar',
+        overrideWindow: 'Ignorar ventana',
+        registrations: 'Registros',
+        attendance: 'Asistencia',
+      }
+    },
+    calendar: {
+      title: 'Calendario de eventos',
+      subtitle: 'Regístrate durante la ventana de registro y haz check-in en el lugar durante el evento.',
+      select: 'Seleccionar',
+      selectedEvent: 'Evento seleccionado',
+      register: 'Registrar',
+      registering: 'Registrando…',
+      goToCheckin: 'Ir al check-in',
+      loading: 'Cargando…'
+    },
+    attendancePage: {
+      title: 'Asistencia al evento',
+      subtitle: 'Página pública de check-in. La ubicación se verifica con la geocerca del evento. Tus datos se almacenan cifrados.',
+      selectEvent: 'Selecciona evento',
+      email: 'Correo',
+      phone: 'Teléfono',
+      attendeeId: 'ID Universitario/Laboral',
+      yourLocation: 'Tu ubicación',
+      notCaptured: 'Sin capturar',
+      captureLocation: 'Capturar ubicación',
+      recordAttendance: 'Registrar asistencia',
+      loading: 'Cargando eventos…',
+      noEvents: 'No hay eventos activos en este momento.'
+    },
+    eventPage: {
+      registrationNotOpen: 'El registro aún no está abierto.',
+      registrationOpen: 'El registro está abierto.',
+      eventInProgress: 'El evento está en curso. Haz check-in en el lugar.',
+      eventEnded: 'Este evento ha finalizado.',
+      register: 'Registrar',
+      checkin: 'Check-in',
+      captureLocation: 'Capturar ubicación',
+      geofences: 'Geocercas',
+      loading: 'Cargando…'
+    }
   },
 } as const

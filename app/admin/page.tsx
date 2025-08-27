@@ -19,11 +19,17 @@ function AdminPageContent() {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
   const [assignedPoints, setAssignedPoints] = useState(0)
-  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'answers' | 'editor'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'answers' | 'editor' | 'events'>('overview')
+  const [events, setEvents] = useState<any[]>([])
+  const [regList, setRegList] = useState<any[]>([])
+  const [attList, setAttList] = useState<any[]>([])
+  const [evForm, setEvForm] = useState<any>({ name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: 1 })
+  const [manForm, setManForm] = useState<any>({ eventId: '', email: '', phone: '', attendeeId: '', overrideWindow: false })
 
   useEffect(() => {
     loadData()
     loadChallengesFromFile()
+    loadEvents()
   }, [])
 
   const loadChallengesFromFile = async () => {
@@ -122,6 +128,66 @@ function AdminPageContent() {
       completedChallenges,
       averageScore,
       topTeam: topTeam?.name || 'N/A'
+    })
+  }
+
+  async function loadEvents() {
+    try {
+      const res = await fetch('/api/admin/attendance?type=events', { headers: { 'x-ctf-role': 'admin' } })
+      const data = await res.json()
+      setEvents(data.events || [])
+    } catch {}
+  }
+
+  async function refreshLists(eventId?: string) {
+    try {
+      const qs = eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''
+      const [regsRes, attRes] = await Promise.all([
+        fetch(`/api/admin/attendance?type=registrations${qs}`, { headers: { 'x-ctf-role': 'admin' } }),
+        fetch(`/api/admin/attendance${qs}`, { headers: { 'x-ctf-role': 'admin' } })
+      ])
+      const regs = await regsRes.json()
+      const atts = await attRes.json()
+      setRegList(regs.registrations || [])
+      setAttList(atts.attendance || [])
+    } catch {}
+  }
+
+  async function saveEvent() {
+    const payload = { action: 'upsertEvent', ...evForm, latitude: evForm.latitude ? Number(evForm.latitude) : null, longitude: evForm.longitude ? Number(evForm.longitude) : null, radius_meters: evForm.radius_meters ? Number(evForm.radius_meters) : null }
+    const res = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify(payload) })
+  if (res.ok) { setEvForm({ name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: 1 }); await loadEvents() }
+  }
+
+  async function addLocation(evId: string) {
+    const name = prompt('Location name (optional)') || undefined
+    const lat = Number(prompt('Latitude') || '')
+    const lon = Number(prompt('Longitude') || '')
+    const rad = Number(prompt('Radius (m)') || '150')
+    if (Number.isFinite(lat) && Number.isFinite(lon) && Number.isFinite(rad)) {
+      await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify({ action: 'addLocation', eventId: evId, name, latitude: lat, longitude: lon, radius_meters: rad }) })
+      alert('Location added')
+    }
+  }
+
+  async function manualCheckIn() {
+    const res = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify({ action: 'manualAttendance', ...manForm }) })
+    const data = await res.json()
+    alert(data.message || (data.success ? 'Recorded' : 'Failed'))
+    if (data.success) { setManForm({ eventId: '', email: '', phone: '', attendeeId: '', overrideWindow: false }); refreshLists() }
+  }
+
+  function downloadCSV(eventId: string) {
+    const url = `/api/attendance/export?eventId=${encodeURIComponent(eventId)}`
+    fetch(url, { headers: { 'x-ctf-role': 'admin' } }).then(async res => {
+      if (!res.ok) { alert('Export failed'); return }
+      const text = await res.text()
+      const blob = new Blob([text], { type: 'text/csv;charset=utf-8' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `attendance-${eventId}.csv`
+      a.click()
+      URL.revokeObjectURL(a.href)
     })
   }
 
@@ -225,7 +291,8 @@ function AdminPageContent() {
             {[
               { id: 'overview', label: 'Overview', icon: Target },
               { id: 'submissions', label: 'Submissions', icon: Clock },
-              { id: 'answers', label: 'Answer Management', icon: CheckCircle }
+              { id: 'answers', label: 'Answer Management', icon: CheckCircle },
+              { id: 'events', label: 'Events', icon: Users }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -478,6 +545,110 @@ function AdminPageContent() {
               challenges={challenges}
               onUpdateChallenge={updateChallenge}
             />
+          )}
+
+          {activeTab === 'events' && (
+            <div className="space-y-6">
+              <div className="bg-slate-800/50 rounded-lg p-6">
+                <h3 className="text-xl font-bold text-white mb-4">Create / Update Event</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {['id','name','description','registration_start','registration_end','start_time','end_time','location_name','latitude','longitude','radius_meters','is_active'].map((k) => (
+                    <div key={k}>
+                      <label className="block text-sm text-gray-300 mb-1">{k}</label>
+                      <input
+                        className="w-full p-2 rounded bg-slate-700 text-white"
+                        value={evForm[k] ?? ''}
+                        onChange={(e) => setEvForm((s: any) => ({ ...s, [k]: e.target.value }))}
+                        placeholder={k}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button onClick={saveEvent} className="bg-cyber-600 hover:bg-cyber-700 text-white px-4 py-2 rounded">Save Event</button>
+                  <button onClick={() => setEvForm({ name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: 1 })} className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded">Clear</button>
+                </div>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Events</h3>
+                  <button onClick={() => loadEvents()} className="text-sm text-cyan-300 underline">Refresh</button>
+                </div>
+                <div className="space-y-3">
+                  {events.map((ev) => (
+                    <div key={ev.id} className="bg-slate-700/50 rounded p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-white font-semibold">{ev.name}</p>
+                          <p className="text-xs text-gray-400">{ev.id}</p>
+                          <p className="text-xs text-gray-400">{ev.start_time} → {ev.end_time}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setEvForm(ev)} className="px-3 py-1 bg-slate-600 text-white rounded">Edit</button>
+                          <a href={`/events/${encodeURIComponent(ev.id)}`} target="_blank" rel="noreferrer" className="px-3 py-1 bg-indigo-600 text-white rounded">Open Page</a>
+                          <button onClick={() => addLocation(ev.id)} className="px-3 py-1 bg-purple-600 text-white rounded">Add Location</button>
+                          <button onClick={() => { refreshLists(ev.id); }} className="px-3 py-1 bg-blue-600 text-white rounded">View Lists</button>
+                          <button onClick={() => downloadCSV(ev.id)} className="px-3 py-1 bg-green-600 text-white rounded">Export CSV</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Manual Check-in</h3>
+                  <button onClick={() => manualCheckIn()} className="px-3 py-1 bg-green-700 text-white rounded">Record</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                  {['eventId','email','phone','attendeeId'].map((k) => (
+                    <div key={k}>
+                      <label className="block text-sm text-gray-300 mb-1">{k}</label>
+                      <input className="w-full p-2 rounded bg-slate-700 text-white" value={manForm[k] ?? ''} onChange={(e) => setManForm((s: any) => ({ ...s, [k]: e.target.value }))} />
+                    </div>
+                  ))}
+                  <div className="flex items-end">
+                    <label className="text-sm text-gray-300 mr-2">Override Window</label>
+                    <input type="checkbox" checked={manForm.overrideWindow} onChange={(e) => setManForm((s: any) => ({ ...s, overrideWindow: e.target.checked }))} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-slate-800/50 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-white">Registrations</h3>
+                    <button onClick={() => refreshLists()} className="text-sm text-cyan-300 underline">Refresh</button>
+                  </div>
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {regList.map((r) => (
+                      <div key={r.id} className="bg-slate-700/50 rounded p-2 text-sm text-white">
+                        <div className="flex justify-between"><span>{r.event_name}</span><span className="text-gray-400">{r.created_at}</span></div>
+                        <div className="text-gray-300">{r.email} • {r.phone} • {r.attendee_id}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-white">Attendance</h3>
+                    <button onClick={() => refreshLists()} className="text-sm text-cyan-300 underline">Refresh</button>
+                  </div>
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {attList.map((a) => (
+                      <div key={a.id} className="bg-slate-700/50 rounded p-2 text-sm text-white">
+                        <div className="flex justify-between"><span>{a.event_name}</span><span className="text-gray-400">{a.created_at}</span></div>
+                        <div className="text-gray-300">{a.email} • {a.phone} • {a.attendee_id}</div>
+                        <div className="text-gray-400">{a.status}{a.distance_meters != null ? ` • ${Math.round(a.distance_meters)}m` : ''}{a.reason ? ` • ${a.reason}` : ''}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

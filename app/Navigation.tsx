@@ -23,6 +23,12 @@ export default function Navigation() {
           </Link>
 
           <div className="flex items-center space-x-2 sm:space-x-4">
+            <Link href="/attendance" className="hidden sm:inline-block px-2 py-1 rounded bg-emerald-700/30 text-emerald-200 border border-emerald-600/40 hover:bg-emerald-700/40">
+              {t('nav.attendance')}
+            </Link>
+            <Link href="/calendar" className="hidden sm:inline-block px-2 py-1 rounded bg-cyan-700/30 text-cyan-200 border border-cyan-600/40 hover:bg-cyan-700/40">
+              {t('nav.calendar')}
+            </Link>
             <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
               <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
               <span className="text-gray-300 truncate max-w-20 sm:max-w-none">{user?.name}</span>

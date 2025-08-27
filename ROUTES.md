@@ -56,6 +56,10 @@ This document lists the available routes (pages) and API endpoints in the CTF Da
   - Access: Public
   - Purpose: "Hacker Café" fun page.
 
+- `/attendance`
+  - Access: Public
+  - Purpose: Event attendance check-in with geolocation verification. PII stored encrypted in a separate attendance database.
+
 ## API Endpoints
 
 All API endpoints are under `/api`. Unless otherwise noted, they are public from the app’s perspective (no auth middleware is implemented yet). Use responsibly.
@@ -99,6 +103,17 @@ All API endpoints are under `/api`. Unless otherwise noted, they are public from
 
 - `GET /api/debug`
   - Returns counts and sample data for quick inspection (non-production use).
+
+- `GET /api/events`
+  - Returns `{ events }` list of active public events (id, name, times, location, radius).
+
+- `POST /api/attendance`
+  - Body: `{ eventId, email, phone, attendeeId, latitude, longitude, accuracy? }`
+  - Returns: `{ success, status: 'accepted'|'rejected', distance?, message }`
+
+- `GET /api/attendance/export?eventId=<id>`
+  - Access: Admin only (provide header `x-ctf-role: admin`)
+  - Returns decrypted CSV of attendance records for a given event.
 
 ## Notes
 
