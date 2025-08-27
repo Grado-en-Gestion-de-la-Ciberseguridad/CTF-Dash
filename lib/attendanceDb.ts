@@ -132,9 +132,12 @@ async function insertDefaultEvents() {
   const row = await adb.get(`SELECT COUNT(*) as cnt FROM events`)
   if (row && row.cnt > 0) return
   const now = Date.now()
+  const defaultLat = 40.442205
+  const defaultLon = -3.834616
+  const defaultRad = 100
   const events = [
-    { id: 'opening-ceremony', name: 'Opening Ceremony', description: 'Welcome!', start_time: new Date(now + 3600e3).toISOString(), end_time: new Date(now + 3*3600e3).toISOString(), location_name: 'Main Hall', latitude: 40.7128, longitude: -74.0060, radius_meters: 200, is_active: 1 },
-    { id: 'workshop-cryptography', name: 'Cryptography Workshop', description: 'Hands-on crypto', start_time: new Date(now + 4*3600e3).toISOString(), end_time: new Date(now + 6*3600e3).toISOString(), location_name: 'Lab A', latitude: 40.7128, longitude: -74.0060, radius_meters: 150, is_active: 1 }
+    { id: 'opening-ceremony', name: 'Opening Ceremony', description: 'Welcome!', start_time: new Date(now + 3600e3).toISOString(), end_time: new Date(now + 3*3600e3).toISOString(), location_name: 'Main Hall', latitude: defaultLat, longitude: defaultLon, radius_meters: defaultRad, is_active: 1 },
+    { id: 'workshop-cryptography', name: 'Cryptography Workshop', description: 'Hands-on crypto', start_time: new Date(now + 4*3600e3).toISOString(), end_time: new Date(now + 6*3600e3).toISOString(), location_name: 'Lab A', latitude: defaultLat, longitude: defaultLon, radius_meters: defaultRad, is_active: 1 }
   ]
   for (const e of events) {
     const regStart = new Date(now).toISOString()
@@ -142,7 +145,7 @@ async function insertDefaultEvents() {
     await adb.run(`INSERT OR IGNORE INTO events (id,name,description,registration_start,registration_end,start_time,end_time,location_name,latitude,longitude,radius_meters,is_active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, [e.id, e.name, e.description, regStart, regEnd, e.start_time, e.end_time, e.location_name, e.latitude, e.longitude, e.radius_meters, e.is_active])
   }
   // Add example secondary location for opening ceremony
-  await adb.run(`INSERT INTO event_locations (event_id, name, latitude, longitude, radius_meters) VALUES (?,?,?,?,?)`, ['opening-ceremony', 'Overflow Room', 40.7135, -74.0055, 120])
+  await adb.run(`INSERT INTO event_locations (event_id, name, latitude, longitude, radius_meters) VALUES (?,?,?,?,?)`, ['opening-ceremony', 'Overflow Room', defaultLat + 0.0007, defaultLon + 0.0011, 100])
 }
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {

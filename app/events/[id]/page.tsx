@@ -1,5 +1,8 @@
 "use client"
 import React from 'react'
+import Link from 'next/link'
+import Navigation from '../../Navigation'
+import { ArrowLeft, CalendarDays } from 'lucide-react'
 import { useLang } from '../../LanguageContext'
 
 type EventDetails = {
@@ -98,57 +101,80 @@ export default function EventPage({ params }: { params: { id: string } }) {
     }
   }
 
-  if (loading) return <div className="p-4">{t('eventPage.loading')}</div>
+  if (loading) return <div className="p-4 text-white">{t('eventPage.loading')}</div>
   if (error) return <div className="p-4 text-red-400">{error}</div>
-  if (!details) return <div className="p-4">Event not found</div>
+  if (!details) return <div className="p-4 text-white">Event not found</div>
 
   const state = getState()
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-1">{details.event.name}</h1>
-      {details.event.description && <p className="text-gray-400 mb-4">{details.event.description}</p>}
-      {details.locations?.length > 0 && (
-        <div className="mb-4 text-sm text-gray-500">{t('eventPage.geofences')}: {details.locations.map(l => `${l.name || 'Location'} (${l.radius_meters}m)`).join(', ')}</div>
-      )}
-
-      {state === 'upcoming' && (
-        <div className="p-3 rounded bg-yellow-100 text-yellow-800">{t('eventPage.registrationNotOpen')}</div>
-      )}
-
-      {state === 'register' && (
-        <div className="space-y-3">
-          <div className="p-3 rounded bg-blue-100 text-blue-800">{t('eventPage.registrationOpen')}</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input placeholder={t('attendancePage.email')} className="p-2 rounded bg-slate-700 text-white" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input placeholder={t('attendancePage.phone')} className="p-2 rounded bg-slate-700 text-white" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <input placeholder={t('attendancePage.attendeeId')} className="p-2 rounded bg-slate-700 text-white" value={attendeeId} onChange={(e) => setAttendeeId(e.target.value)} />
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 cyber-grid">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header to match style */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center">
+              <Link href="/events" className="mr-4 p-2 rounded-lg border border-cyber-600/30 hover:border-cyber-400 transition-colors">
+                <ArrowLeft className="h-6 w-6 text-white" />
+              </Link>
+              <div className="flex items-center">
+                <CalendarDays className="h-10 w-10 text-cyan-400 mr-4" />
+                <h1 className="text-4xl font-bold text-white">{details.event.name}</h1>
+              </div>
+            </div>
+            <Link href="/attendance" className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+              {t('eventPage.checkin')}
+            </Link>
           </div>
-          <button onClick={onRegister} className="px-3 py-2 rounded bg-cyber-600 text-white">{t('eventPage.register')}</button>
+
+          {/* Content card */}
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-cyber-600/30 rounded-lg p-6 max-w-3xl">
+            {details.event.description && <p className="text-gray-300 mb-4">{details.event.description}</p>}
+            {details.locations?.length > 0 && (
+              <div className="mb-4 text-sm text-gray-400">{t('eventPage.geofences')}: {details.locations.map(l => `${l.name || 'Location'} (${l.radius_meters}m)`).join(', ')}</div>
+            )}
+
+            {state === 'upcoming' && (
+              <div className="p-3 rounded bg-yellow-100 text-yellow-800">{t('eventPage.registrationNotOpen')}</div>
+            )}
+
+            {state === 'register' && (
+              <div className="space-y-3">
+                <div className="p-3 rounded bg-blue-100 text-blue-800">{t('eventPage.registrationOpen')}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input placeholder="you@school.edu" className="p-2 rounded bg-slate-700 text-white border border-gray-600" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input placeholder="+1-555-0100" className="p-2 rounded bg-slate-700 text-white border border-gray-600" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <input placeholder="U12345678" className="p-2 rounded bg-slate-700 text-white border border-gray-600" value={attendeeId} onChange={(e) => setAttendeeId(e.target.value)} />
+                </div>
+                <button onClick={onRegister} className="px-3 py-2 rounded bg-cyber-600 text-white">{t('eventPage.register')}</button>
+              </div>
+            )}
+
+            {state === 'checkin' && (
+              <div className="space-y-3">
+                <div className="p-3 rounded bg-green-100 text-green-800">{t('eventPage.eventInProgress')}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input placeholder="you@school.edu" className="p-2 rounded bg-slate-700 text-white border border-gray-600" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input placeholder="+1-555-0100" className="p-2 rounded bg-slate-700 text-white border border-gray-600" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <input placeholder="U12345678" className="p-2 rounded bg-slate-700 text-white border border-gray-600" value={attendeeId} onChange={(e) => setAttendeeId(e.target.value)} />
+                </div>
+                <div className="flex items-center justify-between border border-gray-600 rounded p-3 bg-slate-700/30">
+                  <div className="text-sm text-gray-300">{coords ? `Lat ${coords.lat.toFixed(6)}, Lon ${coords.lon.toFixed(6)} ${coords.acc ? `(±${Math.round(coords.acc)}m)` : ''}` : t('attendancePage.notCaptured')}</div>
+                  <button onClick={captureLocation} className="px-3 py-2 rounded bg-blue-700 text-white">{t('eventPage.captureLocation')}</button>
+                </div>
+                <button onClick={onCheckIn} className="px-3 py-2 rounded bg-green-700 text-white">{t('eventPage.checkin')}</button>
+              </div>
+            )}
+
+            {state === 'finished' && (
+              <div className="p-3 rounded bg-gray-800 text-gray-200">{t('eventPage.eventEnded')}</div>
+            )}
+
+            {msg && <div className="mt-4 p-3 rounded bg-white/10 text-white">{msg}</div>}
+          </div>
         </div>
-      )}
-
-      {state === 'checkin' && (
-        <div className="space-y-3">
-          <div className="p-3 rounded bg-green-100 text-green-800">{t('eventPage.eventInProgress')}</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input placeholder={t('attendancePage.email')} className="p-2 rounded bg-slate-700 text-white" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input placeholder={t('attendancePage.phone')} className="p-2 rounded bg-slate-700 text-white" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <input placeholder={t('attendancePage.attendeeId')} className="p-2 rounded bg-slate-700 text-white" value={attendeeId} onChange={(e) => setAttendeeId(e.target.value)} />
-          </div>
-          <div className="flex items-center justify-between border rounded p-3">
-            <div className="text-sm text-gray-400">{coords ? `Lat ${coords.lat.toFixed(6)}, Lon ${coords.lon.toFixed(6)} ${coords.acc ? `(±${Math.round(coords.acc)}m)` : ''}` : t('attendancePage.notCaptured')}</div>
-            <button onClick={captureLocation} className="px-3 py-2 rounded bg-blue-700 text-white">{t('eventPage.captureLocation')}</button>
-          </div>
-          <button onClick={onCheckIn} className="px-3 py-2 rounded bg-green-700 text-white">{t('eventPage.checkin')}</button>
-        </div>
-      )}
-
-      {state === 'finished' && (
-        <div className="p-3 rounded bg-gray-800 text-gray-200">{t('eventPage.eventEnded')}</div>
-      )}
-
-      {msg && <div className="mt-4 p-3 rounded bg-white/10 text-white">{msg}</div>}
-    </div>
+      </div>
+    </>
   )
 }

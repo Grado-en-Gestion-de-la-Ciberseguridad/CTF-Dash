@@ -117,9 +117,9 @@ export default function EventsCalendarPage() {
                 </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input placeholder={t('attendancePage.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="p-2 rounded bg-slate-700 text-white border border-gray-600" />
-                <input placeholder={t('attendancePage.phone')} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required className="p-2 rounded bg-slate-700 text-white border border-gray-600" />
-                <input placeholder={t('attendancePage.attendeeId')} value={attendeeId} onChange={(e) => setAttendeeId(e.target.value)} required className="p-2 rounded bg-slate-700 text-white border border-gray-600" />
+                <input placeholder="you@school.edu" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="p-2 rounded bg-slate-700 text-white border border-gray-600" />
+                <input placeholder="+1-555-0100" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required className="p-2 rounded bg-slate-700 text-white border border-gray-600" />
+                <input placeholder="U12345678" value={attendeeId} onChange={(e) => setAttendeeId(e.target.value)} required className="p-2 rounded bg-slate-700 text-white border border-gray-600" />
               </div>
               <div className="flex gap-3">
                 <button type="submit" disabled={!selectedEvent || submitting} className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50">{submitting ? t('calendar.registering') : t('calendar.register')}</button>

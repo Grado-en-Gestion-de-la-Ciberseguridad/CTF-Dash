@@ -128,6 +128,32 @@ npm run db:init
 npm test
 ```
 
+### Events & Attendance quick tips
+
+- Date/time fields accept your local time via a convenient picker. They are stored as ISO timestamps automatically.
+- Geofence format for events: "lat, lon, radiusInMeters". Example: `49.0490, -122.2850, 150`
+- Use the "Use my location" button on the Events page to auto-fill the geofence with your current coordinates; adjust the radius as needed.
+
+### Seed demo registrations and check-ins
+
+Run the lightweight seeder (server must be running):
+
+```bash
+npm run seed:attendance -- \
+	--base http://localhost:3000 \
+	--name "Demo Event" \
+	--when 2025-09-01T17:00:00,2025-09-01T19:00:00 \
+	--reg  2025-09-01T16:00:00,2025-09-01T16:30:00 \
+	--geo  49.0490,-122.2850,150 \
+	--count 15
+```
+
+Notes:
+
+- `--when` and `--reg` accept comma-separated start,end in ISO or local datetime format; they will be normalized server-side.
+- `--geo` is optional; without a geofence, check-ins are allowed anywhere.
+
+
 ## 🎮 How to Play
 
 1. **Team Registration:** Register your team at `/teams`
@@ -190,7 +216,7 @@ For technical support or questions:
 
 ---
 
-**Built with ❤️ for cybersecurity education and competitive learning**
+Built with ❤️ for cybersecurity education and competitive learning.
 
 ---
 

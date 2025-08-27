@@ -200,9 +200,9 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
   const [start_time, setStart] = React.useState('')
   const [end_time, setEnd] = React.useState('')
   const [locName, setLocName] = React.useState('')
-  const [latitude, setLat] = React.useState<string>('')
-  const [longitude, setLon] = React.useState<string>('')
-  const [radius, setRadius] = React.useState<string>('150')
+  // Simplified geofence input: "lat,lon,radiusMeters"
+  const [geofence, setGeofence] = React.useState<string>('40.442205, -3.834616, 100')
+  const [radius, setRadius] = React.useState<string>('100') // used when auto-filling from "Use my location"
   const [busy, setBusy] = React.useState(false)
   const [msg, setMsg] = React.useState<string | null>(null)
 
@@ -210,10 +210,34 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
     setMsg(null)
     if (!navigator.geolocation) { setMsg('Geolocation not supported'); return }
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setLat(String(pos.coords.latitude)); setLon(String(pos.coords.longitude)) },
+      (pos) => {
+        const lat = String(pos.coords.latitude)
+        const lon = String(pos.coords.longitude)
+        const rad = radius && !Number.isNaN(Number(radius)) ? String(Number(radius)) : '150'
+        setGeofence(`${lat},${lon},${rad}`)
+      },
       (err) => setMsg(err.message || 'Failed to get location'),
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     )
+  }
+
+  function parseGeofence(input: string): { lat: number, lon: number, rad?: number } | null {
+    if (!input) return null
+    const parts = input.split(',').map(s => s.trim()).filter(Boolean)
+    if (parts.length < 2) return null
+    const lat = Number(parts[0])
+    const lon = Number(parts[1])
+    const rad = parts[2] != null && parts[2] !== '' ? Number(parts[2]) : undefined
+    if (Number.isNaN(lat) || Number.isNaN(lon)) return null
+    return { lat, lon, rad }
+  }
+
+  function toISO(dtLocal: string): string | null {
+    if (!dtLocal) return null
+    // dtLocal comes like "YYYY-MM-DDTHH:mm" (local time). Convert to ISO.
+    const d = new Date(dtLocal)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toISOString()
   }
 
   const publish = async () => {
@@ -221,19 +245,25 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
     if (!name) { setMsg('Name required'); return }
     setBusy(true)
     try {
+      // parse geofence
+      const parsed = parseGeofence(geofence || '')
+      const lat = parsed?.lat ?? null
+      const lon = parsed?.lon ?? null
+      const rad = parsed?.rad != null ? parsed.rad : (radius ? Number(radius) : null)
+
       // 1) Create/Upsert event (no id)
       const payload: any = {
         action: 'upsertEvent',
         name,
         description,
-        registration_start: registration_start || null,
-        registration_end: registration_end || null,
-        start_time: start_time || null,
-        end_time: end_time || null,
+        registration_start: toISO(registration_start),
+        registration_end: toISO(registration_end),
+        start_time: toISO(start_time),
+        end_time: toISO(end_time),
         location_name: locName || null,
-        latitude: latitude ? Number(latitude) : null,
-        longitude: longitude ? Number(longitude) : null,
-        radius_meters: radius ? Number(radius) : null,
+        latitude: lat,
+        longitude: lon,
+        radius_meters: rad ?? null,
         is_active: 1
       }
       const res = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'staff' }, body: JSON.stringify(payload) })
@@ -241,8 +271,8 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
       if (!res.ok) throw new Error(data?.error || 'Failed to save event')
       const eventId = data.id
       // 2) If separate geofence provided (lat/lon/radius), also add explicit location row
-      if (latitude && longitude && radius) {
-        const res2 = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'staff' }, body: JSON.stringify({ action: 'addLocation', eventId, name: locName || undefined, latitude: Number(latitude), longitude: Number(longitude), radius_meters: Number(radius) }) })
+      if (lat != null && lon != null && (rad != null)) {
+        const res2 = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'staff' }, body: JSON.stringify({ action: 'addLocation', eventId, name: locName || undefined, latitude: lat, longitude: lon, radius_meters: rad }) })
         if (!res2.ok) {
           const d2 = await res2.json().catch(() => ({}))
           throw new Error(d2?.error || 'Failed to add location')
@@ -251,7 +281,7 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
       setMsg('Event published')
       onCreated(eventId)
       // reset
-      setName(''); setDescription(''); setRegStart(''); setRegEnd(''); setStart(''); setEnd(''); setLocName(''); setLat(''); setLon(''); setRadius('150')
+  setName(''); setDescription(''); setRegStart(''); setRegEnd(''); setStart(''); setEnd(''); setLocName(''); setGeofence('40.442205, -3.834616, 100'); setRadius('100')
     } catch (e: any) {
       setMsg(e.message || 'Failed to publish')
     } finally {
@@ -263,22 +293,50 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
     <div className="bg-slate-800/50 rounded-lg p-6">
       <h3 className="text-xl font-bold text-white mb-4">{t('admin.events.createUpdate')}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.name')} value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
-        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.registration_start')} value={registration_start} onChange={(e) => setRegStart(e.target.value)} />
-        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.registration_end')} value={registration_end} onChange={(e) => setRegEnd(e.target.value)} />
-        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.start_time')} value={start_time} onChange={(e) => setStart(e.target.value)} />
-        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.end_time')} value={end_time} onChange={(e) => setEnd(e.target.value)} />
-        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.location_name')} value={locName} onChange={(e) => setLocName(e.target.value)} />
-        <div className="grid grid-cols-3 gap-2">
-          <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.latitude')} value={latitude} onChange={(e) => setLat(e.target.value)} />
-          <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.longitude')} value={longitude} onChange={(e) => setLon(e.target.value)} />
-          <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.radius_meters')} value={radius} onChange={(e) => setRadius(e.target.value)} />
+        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.name') + ' (e.g., Campus Cyber Night)'} value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.description') + ' (e.g., Hands-on cryptography challenges)'} value={description} onChange={(e) => setDescription(e.target.value)} />
+        <div>
+          <label className="block text-xs text-gray-300 mb-1">Registration opens (local)</label>
+          <input type="datetime-local" className="p-2 w-full rounded bg-slate-700 text-white" value={registration_start} onChange={(e) => setRegStart(e.target.value)} />
+          <p className="text-[11px] text-gray-400 mt-1">Example: 2025-09-01 15:00</p>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-300 mb-1">Registration closes (local)</label>
+          <input type="datetime-local" className="p-2 w-full rounded bg-slate-700 text-white" value={registration_end} onChange={(e) => setRegEnd(e.target.value)} />
+          <p className="text-[11px] text-gray-400 mt-1">Example: 2025-09-01 16:30</p>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-300 mb-1">Event starts (local)</label>
+          <input type="datetime-local" className="p-2 w-full rounded bg-slate-700 text-white" value={start_time} onChange={(e) => setStart(e.target.value)} />
+          <p className="text-[11px] text-gray-400 mt-1">Example: 2025-09-01 17:00</p>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-300 mb-1">Event ends (local)</label>
+          <input type="datetime-local" className="p-2 w-full rounded bg-slate-700 text-white" value={end_time} onChange={(e) => setEnd(e.target.value)} />
+          <p className="text-[11px] text-gray-400 mt-1">Example: 2025-09-01 19:00</p>
+        </div>
+        <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.location_name') + ' (e.g., Library Hall A)'} value={locName} onChange={(e) => setLocName(e.target.value)} />
+        <div>
+          <label className="block text-xs text-gray-300 mb-1">Geofence (lat, lon, radius m)</label>
+          <input className="p-2 w-full rounded bg-slate-700 text-white" placeholder="e.g., 40.442205, -3.834616, 100" value={geofence} onChange={(e) => setGeofence(e.target.value)} />
+          <p className="text-[11px] text-gray-400 mt-1">Format: latitude, longitude, radiusInMeters. If blank, you must add a location later before on-site check-ins will be accepted.</p>
         </div>
       </div>
       <div className="mt-3 flex gap-2">
         <button disabled={busy} onClick={publish} className="bg-cyber-600 hover:bg-cyber-700 disabled:bg-slate-600 text-white px-4 py-2 rounded">{t('admin.events.save')}</button>
-        <button type="button" onClick={captureMyLocation} className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded">{t('eventPage.captureLocation')}</button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={captureMyLocation} className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded">{t('eventPage.captureLocation')}</button>
+          <input title="Radius used when capturing your current location" className="w-28 p-2 rounded bg-slate-700 text-white" value={radius} onChange={(e) => setRadius(e.target.value)} placeholder="radius m" />
+        </div>
+      </div>
+      <div className="mt-3 text-[12px] text-gray-300 space-y-1">
+        <div>Tips:</div>
+        <ul className="list-disc list-inside text-gray-400">
+          <li>Use the calendar pickers in your local time; times are stored as ISO automatically.</li>
+          <li>Geofence format: "lat, lon, radius" (meters). Example: 49.0490, -122.2850, 150</li>
+          <li>If no geofence is set, check-ins will be rejected until a location is configured for the event.</li>
+          <li>Click "Use my location" to auto-fill lat/lon; adjust the radius as needed.</li>
+        </ul>
       </div>
       {msg && <div className="mt-2 text-sm text-gray-300">{msg}</div>}
     </div>
