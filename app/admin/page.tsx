@@ -133,6 +133,19 @@ function AdminPageContent() {
     }
   }, [])
 
+  const loadSubmissionsFromServer = useCallback(async () => {
+    try {
+      const res = await fetch('/api/submissions')
+      if (!res.ok) return
+      const data = await res.json()
+      if (Array.isArray(data?.submissions)) {
+        setSubmissions(data.submissions)
+        // keep local backup in case of offline
+        localStorage.setItem('ctf-submissions', JSON.stringify(data.submissions))
+      }
+    } catch {}
+  }, [])
+
   const updateChallenge = (challengeId: string, updates: Partial<Challenge>) => {
     const updatedChallenges = challenges.map(challenge => 
       challenge.id === challengeId ? { ...challenge, ...updates } : challenge
@@ -156,7 +169,10 @@ function AdminPageContent() {
     loadChallengesFromFile()
     loadEvents()
     loadServerTeams()
-  }, [loadData, loadChallengesFromFile, loadEvents, loadServerTeams])
+    loadSubmissionsFromServer()
+    const iv = setInterval(loadSubmissionsFromServer, 15000)
+    return () => clearInterval(iv)
+  }, [loadData, loadChallengesFromFile, loadEvents, loadServerTeams, loadSubmissionsFromServer])
 
   async function refreshLists(eventId?: string) {
     try {
@@ -271,49 +287,41 @@ function AdminPageContent() {
     })
   }
 
-  const updateSubmissionStatus = (submissionId: string, status: 'correct' | 'incorrect', points: number, notes: string) => {
+  const updateSubmissionStatus = async (submissionId: string, status: 'correct' | 'incorrect', points: number, notes: string) => {
     const submission = submissions.find(s => s.id === submissionId)
     if (!submission) return
-    
+
     // If marking as correct, check if team already has a correct submission for this challenge
     if (status === 'correct') {
-      const existingCorrect = submissions.find(s => 
-        s.teamId === submission.teamId && 
-        s.challengeId === submission.challengeId && 
+      const existingCorrect = submissions.find(s =>
+        s.teamId === submission.teamId &&
+        s.challengeId === submission.challengeId &&
         s.status === 'correct' &&
         s.id !== submissionId
       )
-      
       if (existingCorrect) {
-        if (!confirm('This team already has a correct submission for this challenge. Are you sure you want to mark this as correct too?')) {
-          return
-        }
+        const ok = confirm('This team already has a correct submission for this challenge. Mark as correct anyway?')
+        if (!ok) return
       }
     }
-    
-    const updatedSubmissions = submissions.map(sub => {
-      if (sub.id === submissionId) {
-        // Calculate penalty for incorrect answers
-        let penalty = 0
-        if (status === 'incorrect') {
-          const challenge = challenges.find(c => c.id === sub.challengeId)
-          penalty = challenge?.penaltyPerIncorrect || 0
-        }
-        
-        return {
-          ...sub,
-          status: status as 'pending' | 'correct' | 'incorrect' | 'reviewed',
-          points,
-          penalty,
-          reviewNotes: notes,
-          reviewedBy: user?.username
-        }
-      }
-      return sub
-    })
 
-    setSubmissions(updatedSubmissions)
-    localStorage.setItem('ctf-submissions', JSON.stringify(updatedSubmissions))
+    const challenge = challenges.find(c => c.id === submission.challengeId)
+    const penalty = status === 'incorrect' ? (challenge?.penaltyPerIncorrect || 0) : 0
+
+    // Persist to server
+    const res = await fetch('/api/submissions', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ submissionId, status, reviewedBy: user?.username || 'admin', reviewNotes: notes, points, penalty })
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      alert(data?.error || 'Failed to update submission')
+      return
+    }
+
+    // Refresh from server so lists stay accurate
+    await loadSubmissionsFromServer()
     setSelectedSubmission(null)
     setReviewNotes('')
     setAssignedPoints(0)
@@ -649,7 +657,10 @@ function AdminPageContent() {
           {activeTab === 'submissions' && (
             <div className="space-y-6">
               <div className="bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Pending Submissions ({pendingSubmissions.length})</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Pending Submissions ({pendingSubmissions.length})</h3>
+                  <button onClick={() => loadSubmissionsFromServer()} className="text-sm text-cyan-300 underline">Refresh</button>
+                </div>
                 
                 {pendingSubmissions.length === 0 ? (
                   <p className="text-gray-400">No pending submissions</p>

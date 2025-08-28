@@ -19,9 +19,9 @@
       ],
       "penaltyPerIncorrect": 10,
       "maxIncorrectAttempts": 3,
-      "requiresManualReview": false
+      "requiresManualReview": true
     },
-        {
+    {
       "id": "sec-aware-11",
       "roomId": "security-awareness",
       "roomName": "Security Awareness",
@@ -42,7 +42,7 @@
       "maxIncorrectAttempts": 3,
       "requiresManualReview": false
     },
-        {
+    {
       "id": "sec-aware-12",
       "roomId": "security-awareness2",
       "roomName": "Security Awareness",
@@ -293,7 +293,7 @@
       ],
       "penaltyPerIncorrect": 30,
       "maxIncorrectAttempts": 2,
-      "requiresManualReview": false
+      "requiresManualReview": true
     }
   ]
 }

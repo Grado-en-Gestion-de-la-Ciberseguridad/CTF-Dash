@@ -697,28 +697,36 @@ export async function getPublicStats() {
 }
 
 export async function updateSubmissionStatus(
-  submissionId: string, 
+  submissionId: string,
   status: 'correct' | 'incorrect' | 'pending',
   reviewedBy: string,
   reviewNotes?: string,
-  points?: number
+  points?: number,
+  penalty?: number
 ) {
   const database = await initDatabase()
-  
+
+  // Load existing to compute delta for team score
+  const existing: any = await database.get(`SELECT team_id, points as old_points, penalty as old_penalty FROM submissions WHERE id = ?`, [submissionId])
+  if (!existing) throw new Error('Submission not found')
+
+  const newPoints = points ?? 0
+  const newPenalty = status === 'incorrect' ? (penalty ?? 0) : 0
+
   await database.run(`
     UPDATE submissions 
-    SET status = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, review_notes = ?, points = ?
+    SET status = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, review_notes = ?, points = ?, penalty = ?
     WHERE id = ?
-  `, [status, reviewedBy, reviewNotes || null, points || 0, submissionId])
-  
-  // Update team score if points changed
-  if (points) {
-    const submission = await database.get(`SELECT team_id FROM submissions WHERE id = ?`, [submissionId])
-    if (submission) {
-      await database.run(`
-        UPDATE teams SET total_score = total_score + ?, last_activity = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `, [points, submission.team_id])
-    }
+  `, [status, reviewedBy, reviewNotes || null, newPoints, newPenalty, submissionId])
+
+  // Adjust team total score by the delta between old and new (penalty subtracts)
+  const oldPoints = Number(existing.old_points || 0)
+  const oldPenalty = Number(existing.old_penalty || 0)
+  const delta = (newPoints - oldPoints) - (newPenalty - oldPenalty)
+  if (delta !== 0) {
+    await database.run(`
+      UPDATE teams SET total_score = total_score + ?, last_activity = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [delta, existing.team_id])
   }
 }

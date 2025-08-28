@@ -118,6 +118,16 @@ function AdminPageContent() {
 
   useEffect(() => {
     loadData()
+    // Also try to load fresh submissions from API
+    fetch('/api/submissions').then(async (res) => {
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data?.submissions)) {
+          setSubmissions(data.submissions)
+          localStorage.setItem('ctf-submissions', JSON.stringify(data.submissions))
+        }
+      }
+    }).catch(() => {})
   }, [])
 
   const calculateStats = useCallback(() => {
@@ -183,22 +193,29 @@ function AdminPageContent() {
 
   // calculateStats is memoized above
 
-  const updateSubmissionStatus = (submissionId: string, status: 'correct' | 'incorrect', points: number, notes: string) => {
-    const updatedSubmissions = submissions.map(submission => {
-      if (submission.id === submissionId) {
-        return {
-          ...submission,
-          status: status as 'pending' | 'correct' | 'incorrect' | 'reviewed',
-          points,
-          reviewNotes: notes,
-          reviewedBy: user?.username
-        }
-      }
-      return submission
+  const updateSubmissionStatus = async (submissionId: string, status: 'correct' | 'incorrect', points: number, notes: string) => {
+    const sub = submissions.find(s => s.id === submissionId)
+    const challenge = sub ? challenges.find(c => c.id === sub.challengeId) : undefined
+    const penalty = status === 'incorrect' ? (challenge?.penaltyPerIncorrect || 0) : 0
+    const res = await fetch('/api/submissions', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ submissionId, status, reviewedBy: user?.username || 'admin', reviewNotes: notes, points, penalty })
     })
-
-    setSubmissions(updatedSubmissions)
-    localStorage.setItem('ctf-submissions', JSON.stringify(updatedSubmissions))
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      alert(data?.error || 'Failed to update submission')
+      return
+    }
+    // refresh
+    const r2 = await fetch('/api/submissions')
+    if (r2.ok) {
+      const d2 = await r2.json()
+      if (Array.isArray(d2?.submissions)) {
+        setSubmissions(d2.submissions)
+        localStorage.setItem('ctf-submissions', JSON.stringify(d2.submissions))
+      }
+    }
     setSelectedSubmission(null)
     setReviewNotes('')
     setAssignedPoints(0)
@@ -395,7 +412,20 @@ function AdminPageContent() {
           {activeTab === 'submissions' && (
             <div className="space-y-6">
               <div className="bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Pending Submissions ({pendingSubmissions.length})</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Pending Submissions ({pendingSubmissions.length})</h3>
+                  <button onClick={() => {
+                    fetch('/api/submissions').then(async (res) => {
+                      if (res.ok) {
+                        const data = await res.json()
+                        if (Array.isArray(data?.submissions)) {
+                          setSubmissions(data.submissions)
+                          localStorage.setItem('ctf-submissions', JSON.stringify(data.submissions))
+                        }
+                      }
+                    })
+                  }} className="text-sm text-cyan-300 underline">Refresh</button>
+                </div>
                 
                 {pendingSubmissions.length === 0 ? (
                   <p className="text-gray-400">No pending submissions</p>

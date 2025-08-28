@@ -8,10 +8,35 @@ export async function GET(request: NextRequest) {
     const challengeId = searchParams.get('challengeId')
 
     if (teamId) {
-      const submissions = await getTeamSubmissions(teamId, challengeId || undefined)
+      const rows: any[] = await getTeamSubmissions(teamId, challengeId || undefined)
+      const submissions = rows.map((s: any) => ({
+        id: s.id,
+        teamId: s.team_id,
+        challengeId: s.challenge_id,
+        answer: s.answer,
+        submittedAt: s.submitted_at,
+        status: s.status,
+        points: s.points,
+        penalty: s.penalty,
+        reviewedBy: s.reviewed_by || undefined,
+        reviewNotes: s.review_notes || undefined
+      }))
       return NextResponse.json({ submissions })
     } else {
-      const submissions = await getAllSubmissions()
+      const rows: any[] = await getAllSubmissions()
+      const submissions = rows.map((s: any) => ({
+        id: s.id,
+        teamId: s.team_id,
+        challengeId: s.challenge_id,
+        answer: s.answer,
+        submittedAt: s.submitted_at,
+        status: s.status,
+        points: s.points,
+        penalty: s.penalty,
+        reviewedBy: s.reviewed_by || undefined,
+        reviewNotes: s.review_notes || undefined,
+        teamName: s.team_name
+      }))
       return NextResponse.json({ submissions })
     }
   } catch (error) {
@@ -98,7 +123,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { submissionId, status, reviewedBy, reviewNotes, points } = await request.json()
+    const { submissionId, status, reviewedBy, reviewNotes, points, penalty } = await request.json()
 
     if (!submissionId || !status || !reviewedBy) {
       return NextResponse.json(
@@ -107,7 +132,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    await updateSubmissionStatus(submissionId, status, reviewedBy, reviewNotes, points)
+    await updateSubmissionStatus(submissionId, status, reviewedBy, reviewNotes, points, penalty)
 
     return NextResponse.json({
       success: true,
