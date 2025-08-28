@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { exportAttendanceCSV } from '@/lib/attendanceDb'
+import { exportAttendanceCSV, exportRegistrationsCSV } from '@/lib/attendanceDb'
 
-// Minimal admin check: Expect header 'x-ctf-role: admin'
-function isAdmin(req: NextRequest) {
-  const role = req.headers.get('x-ctf-role') || ''
-  return role.toLowerCase() === 'admin'
+// Minimal role check: Expect header 'x-ctf-role: admin|staff'
+function isStaffOrAdmin(req: NextRequest) {
+  const role = (req.headers.get('x-ctf-role') || '').toLowerCase()
+  return role === 'admin' || role === 'staff'
 }
 
 export async function GET(req: NextRequest) {
   try {
-    if (!isAdmin(req)) {
+    if (!isStaffOrAdmin(req)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { searchParams } = new URL(req.url)
     const eventId = searchParams.get('eventId') || ''
+    const type = (searchParams.get('type') || 'attendance').toLowerCase()
     if (!eventId) return NextResponse.json({ error: 'Missing eventId' }, { status: 400 })
-    const csv = await exportAttendanceCSV(eventId)
+    const csv = type === 'registrations' ? await exportRegistrationsCSV(eventId) : await exportAttendanceCSV(eventId)
     return new NextResponse(csv, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="attendance-${eventId}.csv"`
+        'Content-Disposition': `attachment; filename="${type}-${eventId}.csv"`
       }
     })
   } catch (err: any) {

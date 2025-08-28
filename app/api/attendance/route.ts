@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       accuracy
     } = body || {}
 
-    if (!eventId || !email || !phone || !attendeeId || typeof latitude !== 'number' || typeof longitude !== 'number') {
+    if (!eventId || !email || !phone || !attendeeId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 

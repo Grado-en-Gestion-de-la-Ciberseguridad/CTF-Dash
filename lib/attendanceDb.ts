@@ -168,8 +168,8 @@ export async function recordAttendance(params: {
   email: string,
   phone: string,
   attendeeId: string,
-  latitude: number,
-  longitude: number,
+  latitude?: number,
+  longitude?: number,
   accuracy?: number
 }) {
   const database = await initAttendanceDb()
@@ -185,21 +185,12 @@ export async function recordAttendance(params: {
     return { success: false, status: 'rejected' as const, message: 'Check-in closed' }
   }
 
-  const locs = await database.all(`SELECT latitude, longitude, radius_meters FROM event_locations WHERE event_id = ?`, [params.eventId])
-  const candidates = Array.isArray(locs) && locs.length > 0 ? locs : (typeof event.latitude === 'number' && typeof event.longitude === 'number' ? [{ latitude: event.latitude, longitude: event.longitude, radius_meters: event.radius_meters ?? 150 }] : [])
-  if (candidates.length === 0) return { success: false, status: 'rejected' as const, message: 'Event location not configured' }
-
-  let minDistance = Infinity
-  let accepted = false
-  for (const c of candidates) {
-    const d = haversine(c.latitude, c.longitude, params.latitude, params.longitude)
-    minDistance = Math.min(minDistance, d)
-    if (d <= (c.radius_meters ?? 150)) accepted = true
-  }
-
+  // Geofencing disabled: accept check-in without enforcing location.
+  // If latitude/longitude are provided, store them for reference but do not reject based on distance.
   const id = `att-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-  const status: 'accepted' | 'rejected' = accepted ? 'accepted' : 'rejected'
-  const reason = accepted ? null : `Outside allowed radius (min ${Math.round(minDistance)}m)`
+  const status: 'accepted' | 'rejected' = 'accepted'
+  const minDistance: number | null = null
+  const reason: string | null = null
 
   const emailEnc = encryptField(params.email)
   const phoneEnc = encryptField(params.phone)
@@ -211,9 +202,9 @@ export async function recordAttendance(params: {
     await database.run(
       `INSERT INTO attendance (id,event_id,email_enc,phone_enc,attendee_enc,email_hmac,attendee_hmac,latitude,longitude,accuracy,distance_meters,status,reason)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [id, params.eventId, emailEnc, phoneEnc, attendeeEnc, emailHmac, attendeeHmac, params.latitude, params.longitude, params.accuracy ?? null, isFinite(minDistance) ? minDistance : null, status, reason]
+      [id, params.eventId, emailEnc, phoneEnc, attendeeEnc, emailHmac, attendeeHmac, params.latitude ?? null, params.longitude ?? null, params.accuracy ?? null, null, status, reason]
     )
-    return { success: true, status, distance: isFinite(minDistance) ? minDistance : undefined, message: status === 'accepted' ? 'Attendance recorded' : (reason || 'Attendance rejected') }
+    return { success: true, status, distance: undefined, message: 'Attendance recorded' }
   } catch (err: any) {
     const msg = String(err?.message || '')
     if (msg.includes('UNIQUE') || msg.includes('unique')) {
@@ -403,6 +394,33 @@ export async function exportAttendanceCSV(eventId: string): Promise<string> {
       r.distance_meters ?? '',
       r.status,
       safeCsv(r.reason || '')
+    ]
+    lines.push(vals.map(v => String(v)).join(','))
+  }
+  return lines.join('\n')
+}
+
+export async function exportRegistrationsCSV(eventId: string): Promise<string> {
+  const database = await initAttendanceDb()
+  const rows = await database.all(
+    `SELECT r.*, e.name as event_name FROM registrations r JOIN events e ON r.event_id = e.id WHERE r.event_id = ? ORDER BY r.created_at ASC`,
+    [eventId]
+  )
+  const headers = [
+    'event_id','event_name','created_at','email','phone','attendee_id'
+  ]
+  const lines = [headers.join(',')]
+  for (const r of rows as any[]) {
+    const email = safeCsv(decryptField(r.email_enc))
+    const phone = safeCsv(decryptField(r.phone_enc))
+    const attendee = safeCsv(decryptField(r.attendee_enc))
+    const vals = [
+      r.event_id,
+      safeCsv(r.event_name),
+      r.created_at,
+      email,
+      phone,
+      attendee
     ]
     lines.push(vals.map(v => String(v)).join(','))
   }

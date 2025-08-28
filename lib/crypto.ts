@@ -1,16 +1,47 @@
 import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
+
+let cachedKey: Buffer | null = null
 
 function getKey(): Buffer {
+  if (cachedKey) return cachedKey
+
   const keyB64 = process.env.CTF_ATT_KEY
-  if (!keyB64) {
-    throw new Error('CTF_ATT_KEY is not set; cannot encrypt/decrypt attendance data')
+  if (keyB64) {
+    const key = Buffer.from(keyB64, 'base64')
+    if (key.length !== 32) {
+      throw new Error('CTF_ATT_KEY must be a base64-encoded 32-byte key')
+    }
+    cachedKey = key
+    return cachedKey
   }
-  // Expect base64-encoded 32-byte key
-  const key = Buffer.from(keyB64, 'base64')
-  if (key.length !== 32) {
-    throw new Error('CTF_ATT_KEY must be a base64-encoded 32-byte key')
+
+  // Development fallback: try to load from data/ctf_att_key. If not present, generate and persist.
+  try {
+    const dataDir = path.join(process.cwd(), 'data')
+    const keyFile = path.join(dataDir, 'ctf_att_key')
+    if (fs.existsSync(keyFile)) {
+      const fileB64 = fs.readFileSync(keyFile, 'utf8').trim()
+      const key = Buffer.from(fileB64, 'base64')
+      if (key.length === 32) {
+        cachedKey = key
+        return cachedKey
+      } else {
+        console.warn('Existing data/ctf_att_key is not a base64-encoded 32-byte key; ignoring')
+      }
+    }
+    // Generate a new key and persist it
+    const gen = crypto.randomBytes(32)
+    const genB64 = gen.toString('base64')
+    fs.mkdirSync(dataDir, { recursive: true })
+    fs.writeFileSync(keyFile, genB64, { encoding: 'utf8', mode: 0o600 })
+    console.warn('CTF_ATT_KEY not set. Generated a development key at data/ctf_att_key. For production, set CTF_ATT_KEY to a base64-encoded 32-byte key.')
+    cachedKey = gen
+    return cachedKey
+  } catch (e) {
+    throw new Error('CTF_ATT_KEY is not set and a fallback key could not be created. Set CTF_ATT_KEY to a base64-encoded 32-byte key.')
   }
-  return key
 }
 
 export function encryptField(plaintext: string): string {

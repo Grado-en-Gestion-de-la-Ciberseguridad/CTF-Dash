@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Settings, ArrowLeft, CheckCircle, XCircle, Clock, Users, Target, Award, Download, Trophy } from 'lucide-react'
 import { Team, Submission, AdminStats, Challenge } from '../types'
@@ -120,9 +120,37 @@ function AdminPageContent() {
     loadData()
   }, [])
 
+  const calculateStats = useCallback(() => {
+    if (teams.length === 0) return
+
+    const correctSubmissions = submissions.filter(s => s.status === 'correct').length
+    const pendingSubmissions = submissions.filter(s => s.status === 'pending').length
+    const completedChallenges = new Set(submissions.filter(s => s.status === 'correct').map(s => s.challengeId)).size
+    
+    const teamScores = teams.map(team => {
+      const teamSubmissions = submissions.filter(s => s.teamId === team.id && s.status === 'correct')
+      return teamSubmissions.reduce((sum, sub) => sum + sub.points, 0)
+    })
+    
+    const averageScore = teamScores.length > 0 ? teamScores.reduce((a, b) => a + b, 0) / teamScores.length : 0
+    const topTeam = teams.find(team => {
+      const teamScore = submissions.filter(s => s.teamId === team.id && s.status === 'correct')
+        .reduce((sum, sub) => sum + sub.points, 0)
+      return teamScore === Math.max(...teamScores)
+    })
+
+    setAdminStats({
+      totalTeams: teams.length,
+      totalSubmissions: submissions.length,
+      completedChallenges,
+      averageScore,
+      topTeam: topTeam?.name || 'N/A'
+    })
+  }, [teams, submissions])
+
   useEffect(() => {
     calculateStats()
-  }, [teams, submissions])
+  }, [calculateStats])
 
   const loadData = () => {
     const storedTeams = localStorage.getItem('ctf-teams')
@@ -153,33 +181,7 @@ function AdminPageContent() {
     localStorage.setItem('ctf-challenges', JSON.stringify(updatedChallenges))
   }
 
-  const calculateStats = () => {
-    if (teams.length === 0) return
-
-    const correctSubmissions = submissions.filter(s => s.status === 'correct').length
-    const pendingSubmissions = submissions.filter(s => s.status === 'pending').length
-    const completedChallenges = new Set(submissions.filter(s => s.status === 'correct').map(s => s.challengeId)).size
-    
-    const teamScores = teams.map(team => {
-      const teamSubmissions = submissions.filter(s => s.teamId === team.id && s.status === 'correct')
-      return teamSubmissions.reduce((sum, sub) => sum + sub.points, 0)
-    })
-    
-    const averageScore = teamScores.length > 0 ? teamScores.reduce((a, b) => a + b, 0) / teamScores.length : 0
-    const topTeam = teams.find(team => {
-      const teamScore = submissions.filter(s => s.teamId === team.id && s.status === 'correct')
-        .reduce((sum, sub) => sum + sub.points, 0)
-      return teamScore === Math.max(...teamScores)
-    })
-
-    setAdminStats({
-      totalTeams: teams.length,
-      totalSubmissions: submissions.length,
-      completedChallenges,
-      averageScore,
-      topTeam: topTeam?.name || 'N/A'
-    })
-  }
+  // calculateStats is memoized above
 
   const updateSubmissionStatus = (submissionId: string, status: 'correct' | 'incorrect', points: number, notes: string) => {
     const updatedSubmissions = submissions.map(submission => {

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { Settings, ArrowLeft, CheckCircle, XCircle, Clock, Users, Target, Award, Download, Trophy, Terminal } from 'lucide-react'
+import { Settings, ArrowLeft, CheckCircle, XCircle, Clock, Users, Target, Award, Download, Trophy, Terminal, PlusCircle, UserPlus, UserCog } from 'lucide-react'
 import { Team, Submission, AdminStats, Challenge } from '../types'
 import { useAuth } from '../AuthContext'
 import Navigation from '../Navigation'
@@ -19,20 +19,34 @@ function AdminPageContent() {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
   const [assignedPoints, setAssignedPoints] = useState(0)
-  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'answers' | 'editor' | 'events'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'answers' | 'editor' | 'events' | 'adminTools'>('overview')
+  const [adj, setAdj] = useState<{ teamId: string; delta: number; reason: string }>({ teamId: '', delta: 0, reason: '' })
+  const [teamOptions, setTeamOptions] = useState<Array<{ id: string; name: string }>>([])
+  const [usersList, setUsersList] = useState<any[]>([])
+  const [newUser, setNewUser] = useState<{ username: string; password: string; role: 'admin'|'staff'; name: string }>({ username: '', password: '', role: 'staff', name: '' })
   const [events, setEvents] = useState<any[]>([])
   const [regList, setRegList] = useState<any[]>([])
   const [attList, setAttList] = useState<any[]>([])
-  const [evForm, setEvForm] = useState<any>({ name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: 1 })
+  const [listsFor, setListsFor] = useState<{ eventId?: string | null; eventName?: string | null } | null>(null)
+  const listsRef = useRef<HTMLDivElement | null>(null)
+  const [evForm, setEvForm] = useState<any>({ id: '', name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })
   const [manForm, setManForm] = useState<any>({ eventId: '', email: '', phone: '', attendeeId: '', overrideWindow: false })
+  const [evMsg, setEvMsg] = useState<string| null>(null)
 
-  useEffect(() => {
-    loadData()
-    loadChallengesFromFile()
-    loadEvents()
+  // Init will run after loaders are declared below
+
+  const loadServerTeams = useCallback(async () => {
+    try {
+      const res = await fetch('/api/teams')
+      if (res.ok) {
+        const data = await res.json()
+        const opts = Array.isArray(data?.teams) ? data.teams.map((t: any) => ({ id: t.id, name: t.name })) : []
+        setTeamOptions(opts)
+      }
+    } catch {}
   }, [])
 
-  const loadChallengesFromFile = async () => {
+  const loadChallengesFromFile = useCallback(async () => {
     try {
       const response = await fetch('/challenges.json')
       if (response.ok) {
@@ -41,7 +55,6 @@ function AdminPageContent() {
         // Always update localStorage with latest JSON data
         localStorage.setItem('ctf-challenges', JSON.stringify(data.challenges))
       } else {
-        console.error('Failed to load challenges.json')
         // Fallback to localStorage only if JSON fails
         const storedChallenges = localStorage.getItem('ctf-challenges')
         if (storedChallenges) {
@@ -49,14 +62,13 @@ function AdminPageContent() {
         }
       }
     } catch (error) {
-      console.error('Failed to load challenges from file:', error)
       // Fallback to localStorage only if JSON fails
       const storedChallenges = localStorage.getItem('ctf-challenges')
       if (storedChallenges) {
         setChallenges(JSON.parse(storedChallenges))
       }
     }
-  }
+  }, [])
 
   const addChallenge = (challenge: Challenge) => {
     const updatedChallenges = [...challenges, challenge]
@@ -72,32 +84,7 @@ function AdminPageContent() {
     }
   }
 
-  useEffect(() => {
-    calculateStats()
-  }, [teams, submissions])
-
-  const loadData = () => {
-    const storedTeams = localStorage.getItem('ctf-teams')
-    const storedSubmissions = localStorage.getItem('ctf-submissions')
-    
-    if (storedTeams) {
-      setTeams(JSON.parse(storedTeams))
-    }
-    
-    if (storedSubmissions) {
-      setSubmissions(JSON.parse(storedSubmissions))
-    }
-  }
-
-  const updateChallenge = (challengeId: string, updates: Partial<Challenge>) => {
-    const updatedChallenges = challenges.map(challenge => 
-      challenge.id === challengeId ? { ...challenge, ...updates } : challenge
-    )
-    setChallenges(updatedChallenges)
-    localStorage.setItem('ctf-challenges', JSON.stringify(updatedChallenges))
-  }
-
-  const calculateStats = () => {
+  const calculateStats = useCallback(() => {
     if (teams.length === 0) return
 
     const correctSubmissions = submissions.filter(s => s.status === 'correct').length
@@ -129,34 +116,125 @@ function AdminPageContent() {
       averageScore,
       topTeam: topTeam?.name || 'N/A'
     })
+  }, [teams, submissions])
+
+  useEffect(() => {
+    calculateStats()
+  }, [calculateStats])
+
+  const loadData = useCallback(() => {
+    const storedTeams = localStorage.getItem('ctf-teams')
+    const storedSubmissions = localStorage.getItem('ctf-submissions')
+    if (storedTeams) {
+      setTeams(JSON.parse(storedTeams))
+    }
+    if (storedSubmissions) {
+      setSubmissions(JSON.parse(storedSubmissions))
+    }
+  }, [])
+
+  const updateChallenge = (challengeId: string, updates: Partial<Challenge>) => {
+    const updatedChallenges = challenges.map(challenge => 
+      challenge.id === challengeId ? { ...challenge, ...updates } : challenge
+    )
+    setChallenges(updatedChallenges)
+    localStorage.setItem('ctf-challenges', JSON.stringify(updatedChallenges))
   }
 
-  async function loadEvents() {
+  
+  const loadEvents = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/attendance?type=events', { headers: { 'x-ctf-role': 'admin' } })
+      const res = await fetch('/api/admin/attendance?type=events', { headers: { 'x-ctf-role': (user?.role || 'staff') } })
       const data = await res.json()
       setEvents(data.events || [])
     } catch {}
-  }
+  }, [user?.role])
+
+  // Run initial loads when component mounts or role changes affects loader deps
+  useEffect(() => {
+    loadData()
+    loadChallengesFromFile()
+    loadEvents()
+    loadServerTeams()
+  }, [loadData, loadChallengesFromFile, loadEvents, loadServerTeams])
 
   async function refreshLists(eventId?: string) {
     try {
       const qs = eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''
       const [regsRes, attRes] = await Promise.all([
-        fetch(`/api/admin/attendance?type=registrations${qs}`, { headers: { 'x-ctf-role': 'admin' } }),
-        fetch(`/api/admin/attendance${qs}`, { headers: { 'x-ctf-role': 'admin' } })
+        fetch(`/api/admin/attendance?type=registrations${qs}`, { headers: { 'x-ctf-role': (user?.role || 'staff') } }),
+        fetch(`/api/admin/attendance${qs}`, { headers: { 'x-ctf-role': (user?.role || 'staff') } })
       ])
+      if (!regsRes.ok || !attRes.ok) {
+        setRegList([])
+        setAttList([])
+        return
+      }
       const regs = await regsRes.json()
       const atts = await attRes.json()
       setRegList(regs.registrations || [])
       setAttList(atts.attendance || [])
+      // Track which event the lists are for and scroll into view for visibility
+      const evName = eventId ? (events.find(e => e.id === eventId)?.name || null) : null
+      setListsFor({ eventId: eventId || null, eventName: evName })
+      if (listsRef.current) {
+        listsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
     } catch {}
   }
 
+  function toISO(dtLocal: string): string | null {
+    if (!dtLocal) return null
+    const d = new Date(dtLocal)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toISOString()
+  }
+
+  function isoToLocalInput(iso?: string | null): string {
+    if (!iso) return ''
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return ''
+    // to YYYY-MM-DDTHH:mm
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const yyyy = d.getFullYear()
+    const mm = pad(d.getMonth() + 1)
+    const dd = pad(d.getDate())
+    const hh = pad(d.getHours())
+    const mi = pad(d.getMinutes())
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`
+  }
+
   async function saveEvent() {
-    const payload = { action: 'upsertEvent', ...evForm, latitude: evForm.latitude ? Number(evForm.latitude) : null, longitude: evForm.longitude ? Number(evForm.longitude) : null, radius_meters: evForm.radius_meters ? Number(evForm.radius_meters) : null }
-    const res = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify(payload) })
-  if (res.ok) { setEvForm({ name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: 1 }); await loadEvents() }
+    setEvMsg(null)
+    if (!evForm.name || String(evForm.name).trim() === '') { setEvMsg('Event name is required'); return }
+    const payload: any = {
+      action: 'upsertEvent',
+      id: evForm.id?.trim() || undefined,
+      name: String(evForm.name).trim(),
+      description: evForm.description?.trim() || null,
+      registration_start: toISO(evForm.registration_start) || null,
+      registration_end: toISO(evForm.registration_end) || null,
+      start_time: toISO(evForm.start_time) || null,
+      end_time: toISO(evForm.end_time) || null,
+      location_name: evForm.location_name?.trim() || null,
+      latitude: evForm.latitude !== '' && evForm.latitude != null ? Number(evForm.latitude) : null,
+      longitude: evForm.longitude !== '' && evForm.longitude != null ? Number(evForm.longitude) : null,
+      radius_meters: evForm.radius_meters !== '' && evForm.radius_meters != null ? Number(evForm.radius_meters) : null,
+      is_active: evForm.is_active ? 1 : 0
+    }
+    try {
+      const res = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': (user?.role || 'staff') }, body: JSON.stringify(payload) })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setEvMsg(data?.error || 'Failed to save event')
+        return
+      }
+      setEvMsg('Event saved')
+      setEvForm({ id: '', name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })
+      await loadEvents()
+    } catch (e: any) {
+      setEvMsg(e?.message || 'Request failed')
+    }
   }
 
   async function addLocation(evId: string) {
@@ -165,27 +243,27 @@ function AdminPageContent() {
     const lon = Number(prompt('Longitude') || '')
     const rad = Number(prompt('Radius (m)') || '150')
     if (Number.isFinite(lat) && Number.isFinite(lon) && Number.isFinite(rad)) {
-      await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify({ action: 'addLocation', eventId: evId, name, latitude: lat, longitude: lon, radius_meters: rad }) })
+      await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': (user?.role || 'staff') }, body: JSON.stringify({ action: 'addLocation', eventId: evId, name, latitude: lat, longitude: lon, radius_meters: rad }) })
       alert('Location added')
     }
   }
 
   async function manualCheckIn() {
-    const res = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify({ action: 'manualAttendance', ...manForm }) })
+    const res = await fetch('/api/admin/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': (user?.role || 'staff') }, body: JSON.stringify({ action: 'manualAttendance', ...manForm }) })
     const data = await res.json()
     alert(data.message || (data.success ? 'Recorded' : 'Failed'))
     if (data.success) { setManForm({ eventId: '', email: '', phone: '', attendeeId: '', overrideWindow: false }); refreshLists() }
   }
 
-  function downloadCSV(eventId: string) {
-    const url = `/api/attendance/export?eventId=${encodeURIComponent(eventId)}`
-    fetch(url, { headers: { 'x-ctf-role': 'admin' } }).then(async res => {
+  function downloadCSV(eventId: string, type: 'attendance' | 'registrations' = 'attendance') {
+    const url = `/api/attendance/export?eventId=${encodeURIComponent(eventId)}&type=${type}`
+    fetch(url, { headers: { 'x-ctf-role': (user?.role || 'staff') } }).then(async res => {
       if (!res.ok) { alert('Export failed'); return }
       const text = await res.text()
       const blob = new Blob([text], { type: 'text/csv;charset=utf-8' })
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
-      a.download = `attendance-${eventId}.csv`
+      a.download = `${type}-${eventId}.csv`
       a.click()
       URL.revokeObjectURL(a.href)
     })
@@ -292,7 +370,8 @@ function AdminPageContent() {
               { id: 'overview', label: 'Overview', icon: Target },
               { id: 'submissions', label: 'Submissions', icon: Clock },
               { id: 'answers', label: 'Answer Management', icon: CheckCircle },
-              { id: 'events', label: 'Events', icon: Users }
+              { id: 'events', label: 'Events', icon: Users },
+              { id: 'adminTools', label: 'Admin Tools', icon: UserCog }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -476,6 +555,95 @@ function AdminPageContent() {
             </div>
           )}
 
+          {activeTab === 'adminTools' && (
+            <div className="space-y-6">
+              {/* Manual Score Adjustment (staff and admin) */}
+              <div className="bg-slate-800/50 rounded-lg p-6">
+                <h3 className="text-xl font-bold text-white mb-4">Manual Score Adjustment</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Team</label>
+                    <select className="w-full p-2 rounded bg-slate-700 text-white" value={adj.teamId} onChange={(e) => setAdj(s => ({ ...s, teamId: e.target.value }))}>
+                      <option value="">Select team</option>
+                      {teamOptions.map(t => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Delta (points)</label>
+                    <input type="number" className="w-full p-2 rounded bg-slate-700 text-white" value={adj.delta} onChange={(e) => setAdj(s => ({ ...s, delta: Number(e.target.value) }))} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-gray-300 mb-1">Reason</label>
+                    <input className="w-full p-2 rounded bg-slate-700 text-white" value={adj.reason} onChange={(e) => setAdj(s => ({ ...s, reason: e.target.value }))} placeholder="e.g., Bonus for workshop" />
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button onClick={async () => {
+                    if (!adj.teamId || !Number.isFinite(adj.delta) || adj.delta === 0) { alert('Select a team and enter a non-zero delta'); return }
+                    const res = await fetch('/api/admin/manage', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': (user?.role || 'staff') }, body: JSON.stringify({ action: 'adjustScore', ...adj, actor: user?.username }) })
+                    const data = await res.json()
+                    if (!res.ok) { alert(data.error || 'Failed'); return }
+                    alert('Adjustment saved')
+                  }} className="bg-cyber-600 hover:bg-cyber-700 text-white px-4 py-2 rounded flex items-center gap-2"><PlusCircle className="h-4 w-4"/>Apply</button>
+                </div>
+              </div>
+
+              {/* User Management (admins only) */}
+              {user?.role === 'admin' && (
+                <div className="bg-slate-800/50 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-white">User Management</h3>
+                    <button onClick={async () => {
+                      const res = await fetch('/api/admin/manage', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify({ action: 'listUsers' }) })
+                      const data = await res.json()
+                      if (res.ok) setUsersList(data.users || [])
+                    }} className="text-sm text-cyan-300 underline">Refresh</button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                    <input className="p-2 rounded bg-slate-700 text-white" placeholder="username" value={newUser.username} onChange={(e) => setNewUser(s => ({ ...s, username: e.target.value }))} />
+                    <input className="p-2 rounded bg-slate-700 text-white" placeholder="password" value={newUser.password} onChange={(e) => setNewUser(s => ({ ...s, password: e.target.value }))} />
+                    <select className="p-2 rounded bg-slate-700 text-white" value={newUser.role} onChange={(e) => setNewUser(s => ({ ...s, role: e.target.value as any }))}>
+                      <option value="admin">admin</option>
+                      <option value="staff">staff</option>
+                    </select>
+                    <input className="p-2 rounded bg-slate-700 text-white" placeholder="name" value={newUser.name} onChange={(e) => setNewUser(s => ({ ...s, name: e.target.value }))} />
+                  </div>
+                  <div className="flex gap-2 mb-4">
+                    <button onClick={async () => {
+                      if (!newUser.username || !newUser.role) { alert('Username and role are required'); return }
+                      const res = await fetch('/api/admin/manage', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify({ action: 'upsertUser', ...newUser }) })
+                      const data = await res.json()
+                      if (!res.ok) { alert(data.error || 'Failed'); return }
+                      alert('User saved')
+                    }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2"><UserPlus className="h-4 w-4"/>Save User</button>
+                  </div>
+                  <div className="space-y-1 max-h-72 overflow-y-auto">
+                    {usersList.map(u => (
+                      <div key={u.id} className="bg-slate-700/50 rounded p-2 text-sm text-white flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">{u.username} <span className="text-xs text-gray-400">({u.role})</span></div>
+                          <div className="text-xs text-gray-400">{u.name}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-1 rounded ${u.is_active ? 'bg-green-600' : 'bg-slate-600'}`}>{u.is_active ? 'active' : 'inactive'}</span>
+                          <button onClick={async () => {
+                            const res = await fetch('/api/admin/manage', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify({ action: 'setUserActive', username: u.username, isActive: !u.is_active }) })
+                            const data = await res.json()
+                            if (!res.ok) { alert(data.error || 'Failed'); return }
+                            // refresh
+                            const res2 = await fetch('/api/admin/manage', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ctf-role': 'admin' }, body: JSON.stringify({ action: 'listUsers' }) })
+                            const d2 = await res2.json()
+                            if (res2.ok) setUsersList(d2.users || [])
+                          }} className="px-2 py-1 rounded bg-slate-600 hover:bg-slate-500">Toggle</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'submissions' && (
             <div className="space-y-6">
               <div className="bg-slate-800/50 rounded-lg p-6">
@@ -552,22 +720,60 @@ function AdminPageContent() {
               <div className="bg-slate-800/50 rounded-lg p-6">
                 <h3 className="text-xl font-bold text-white mb-4">Create / Update Event</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {['id','name','description','registration_start','registration_end','start_time','end_time','location_name','latitude','longitude','radius_meters','is_active'].map((k) => (
-                    <div key={k}>
-                      <label className="block text-sm text-gray-300 mb-1">{k}</label>
-                      <input
-                        className="w-full p-2 rounded bg-slate-700 text-white"
-                        value={evForm[k] ?? ''}
-                        onChange={(e) => setEvForm((s: any) => ({ ...s, [k]: e.target.value }))}
-                        placeholder={k}
-                      />
-                    </div>
-                  ))}
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">id (leave blank to create new)</label>
+                    <input className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.id} onChange={(e) => setEvForm((s: any) => ({ ...s, id: e.target.value }))} placeholder="event-..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">name</label>
+                    <input className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.name} onChange={(e) => setEvForm((s: any) => ({ ...s, name: e.target.value }))} placeholder="e.g., Campus Cyber Night" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-gray-300 mb-1">description</label>
+                    <input className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.description} onChange={(e) => setEvForm((s: any) => ({ ...s, description: e.target.value }))} placeholder="Short description" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">registration_start (local)</label>
+                    <input type="datetime-local" className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.registration_start} onChange={(e) => setEvForm((s: any) => ({ ...s, registration_start: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">registration_end (local)</label>
+                    <input type="datetime-local" className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.registration_end} onChange={(e) => setEvForm((s: any) => ({ ...s, registration_end: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">start_time (local)</label>
+                    <input type="datetime-local" className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.start_time} onChange={(e) => setEvForm((s: any) => ({ ...s, start_time: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">end_time (local)</label>
+                    <input type="datetime-local" className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.end_time} onChange={(e) => setEvForm((s: any) => ({ ...s, end_time: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">location_name</label>
+                    <input className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.location_name} onChange={(e) => setEvForm((s: any) => ({ ...s, location_name: e.target.value }))} placeholder="e.g., Library Hall A" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">latitude</label>
+                    <input type="number" className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.latitude} onChange={(e) => setEvForm((s: any) => ({ ...s, latitude: e.target.value }))} placeholder="49.0490" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">longitude</label>
+                    <input type="number" className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.longitude} onChange={(e) => setEvForm((s: any) => ({ ...s, longitude: e.target.value }))} placeholder="-122.2850" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">radius_meters</label>
+                    <input type="number" className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.radius_meters} onChange={(e) => setEvForm((s: any) => ({ ...s, radius_meters: e.target.value }))} placeholder="150" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input id="is_active" type="checkbox" checked={!!evForm.is_active} onChange={(e) => setEvForm((s: any) => ({ ...s, is_active: e.target.checked }))} />
+                    <label htmlFor="is_active" className="text-sm text-gray-300">is_active</label>
+                  </div>
                 </div>
                 <div className="mt-3 flex gap-2">
                   <button onClick={saveEvent} className="bg-cyber-600 hover:bg-cyber-700 text-white px-4 py-2 rounded">Save Event</button>
-                  <button onClick={() => setEvForm({ name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: 1 })} className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded">Clear</button>
+                  <button onClick={() => setEvForm({ id: '', name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })} className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded">Clear</button>
                 </div>
+                {evMsg && <div className="mt-2 text-sm text-gray-300">{evMsg}</div>}
               </div>
 
               <div className="bg-slate-800/50 rounded-lg p-6">
@@ -585,11 +791,27 @@ function AdminPageContent() {
                           <p className="text-xs text-gray-400">{ev.start_time} → {ev.end_time}</p>
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => setEvForm(ev)} className="px-3 py-1 bg-slate-600 text-white rounded">Edit</button>
-                          <a href={`/events/${encodeURIComponent(ev.id)}`} target="_blank" rel="noreferrer" className="px-3 py-1 bg-indigo-600 text-white rounded">Open Page</a>
+                          <button onClick={() => setEvForm({
+                            id: ev.id,
+                            name: ev.name || '',
+                            description: ev.description || '',
+                            registration_start: isoToLocalInput(ev.registration_start),
+                            registration_end: isoToLocalInput(ev.registration_end),
+                            start_time: isoToLocalInput(ev.start_time),
+                            end_time: isoToLocalInput(ev.end_time),
+                            location_name: ev.location_name || '',
+                            latitude: ev.latitude ?? '',
+                            longitude: ev.longitude ?? '',
+                            radius_meters: ev.radius_meters ?? 150,
+                            is_active: !!ev.is_active
+                          })} className="px-3 py-1 bg-slate-600 text-white rounded">Edit</button>
+                          <a href={`/attendance?event=${encodeURIComponent(ev.id)}`} target="_blank" rel="noreferrer" className="px-3 py-1 bg-indigo-600 text-white rounded">Open Page</a>
                           <button onClick={() => addLocation(ev.id)} className="px-3 py-1 bg-purple-600 text-white rounded">Add Location</button>
                           <button onClick={() => { refreshLists(ev.id); }} className="px-3 py-1 bg-blue-600 text-white rounded">View Lists</button>
-                          <button onClick={() => downloadCSV(ev.id)} className="px-3 py-1 bg-green-600 text-white rounded">Export CSV</button>
+                          <div className="flex gap-2">
+                            <button onClick={() => downloadCSV(ev.id, 'attendance')} className="px-3 py-1 bg-green-600 text-white rounded">Export Attendance</button>
+                            <button onClick={() => downloadCSV(ev.id, 'registrations')} className="px-3 py-1 bg-emerald-600 text-white rounded">Export Registrations</button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -616,11 +838,20 @@ function AdminPageContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div ref={listsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {(
+                  <div className="lg:col-span-2 -mt-2 mb-2 text-sm text-gray-300">
+                    {listsFor?.eventId ? (
+                      <span>Showing lists for: <span className="text-white font-medium">{listsFor.eventName || 'Selected Event'}</span> <span className="text-gray-400">({listsFor.eventId})</span></span>
+                    ) : (
+                      <span>Showing lists for: <span className="text-white font-medium">All events</span></span>
+                    )}
+                  </div>
+                )}
                 <div className="bg-slate-800/50 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold text-white">Registrations</h3>
-                    <button onClick={() => refreshLists()} className="text-sm text-cyan-300 underline">Refresh</button>
+                    <button onClick={() => refreshLists(listsFor?.eventId || undefined)} className="text-sm text-cyan-300 underline">Refresh</button>
                   </div>
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {regList.map((r) => (
@@ -635,7 +866,7 @@ function AdminPageContent() {
                 <div className="bg-slate-800/50 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold text-white">Attendance</h3>
-                    <button onClick={() => refreshLists()} className="text-sm text-cyan-300 underline">Refresh</button>
+                    <button onClick={() => refreshLists(listsFor?.eventId || undefined)} className="text-sm text-cyan-300 underline">Refresh</button>
                   </div>
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {attList.map((a) => (
@@ -658,7 +889,7 @@ function AdminPageContent() {
 
 export default function AdminPage() {
   return (
-    <ProtectedRoute requireRole="admin">
+    <ProtectedRoute requireRole="staff">
       <AdminPageContent />
     </ProtectedRoute>
   )

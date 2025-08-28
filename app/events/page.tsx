@@ -47,34 +47,37 @@ function EventsPageContent() {
   }, [t])
 
   const refreshAdminLists = React.useCallback(async (eventId?: string) => {
-    if (!isAdmin) return
+    if (!isAdmin && !isStaff) return
     const id = eventId || selectedEvent
     if (!id) return
     try {
       const [regsRes, attRes] = await Promise.all([
-        fetch(`/api/admin/attendance?type=registrations&eventId=${encodeURIComponent(id)}`, { headers: { 'x-ctf-role': 'admin' } }),
-        fetch(`/api/admin/attendance?eventId=${encodeURIComponent(id)}`, { headers: { 'x-ctf-role': 'admin' } })
+        fetch(`/api/admin/attendance?type=registrations&eventId=${encodeURIComponent(id)}`, { headers: { 'x-ctf-role': isAdmin ? 'admin' : 'staff' } }),
+        fetch(`/api/admin/attendance?eventId=${encodeURIComponent(id)}`, { headers: { 'x-ctf-role': isAdmin ? 'admin' : 'staff' } })
       ])
       const regs = await regsRes.json()
       const atts = await attRes.json()
-      setRegList(regs.registrations || [])
-      setAttList(atts.attendance || [])
+      const regsAll = regs.registrations || []
+      const attsAll = atts.attendance || []
+      setRegList(regsAll.slice(0, 5))
+      setAttList(attsAll.slice(0, 5))
     } catch {}
-  }, [isAdmin, selectedEvent])
+  }, [isAdmin, isStaff, selectedEvent])
 
   React.useEffect(() => {
-    if (isAdmin && selectedEvent) refreshAdminLists(selectedEvent)
-  }, [isAdmin, selectedEvent, refreshAdminLists])
+    if ((isAdmin || isStaff) && selectedEvent) refreshAdminLists(selectedEvent)
+  }, [isAdmin, isStaff, selectedEvent, refreshAdminLists])
 
-  const downloadCSV = (eventId: string) => {
-    const url = `/api/attendance/export?eventId=${encodeURIComponent(eventId)}`
-    fetch(url, { headers: { 'x-ctf-role': 'admin' } }).then(async res => {
+  const downloadCSV = (eventId: string, type: 'attendance' | 'registrations' = 'attendance') => {
+    const url = `/api/attendance/export?eventId=${encodeURIComponent(eventId)}&type=${type}`
+    const role = isAdmin ? 'admin' : (isStaff ? 'staff' : '')
+    fetch(url, { headers: { 'x-ctf-role': role } }).then(async res => {
       if (!res.ok) { alert('Export failed'); return }
       const text = await res.text()
       const blob = new Blob([text], { type: 'text/csv;charset=utf-8' })
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
-      a.download = `attendance-${eventId}.csv`
+      a.download = `${type}-${eventId}.csv`
       a.click()
       URL.revokeObjectURL(a.href)
     })
@@ -98,7 +101,7 @@ function EventsPageContent() {
             </div>
             <div className="flex gap-2">
               <Link href="/calendar" className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors">{t('homeEvents.viewCalendar')}</Link>
-              <Link href="/attendance" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors">{t('homeEvents.goToCheckin')}</Link>
+              <Link href="/attendance?mode=checkin" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors">{t('homeEvents.goToCheckin')}</Link>
             </div>
           </div>
 
@@ -119,9 +122,12 @@ function EventsPageContent() {
                   <div className="text-gray-400">{t('homeEvents.reg')}: {sel.registration_start || 'n/a'} → {sel.registration_end || 'n/a'}</div>
                   <div className="text-gray-400">{t('homeEvents.event')}: {sel.start_time || 'n/a'} → {sel.end_time || 'n/a'}</div>
                   <div className="pt-2 flex gap-2">
-                    <a href={`/events/${encodeURIComponent(sel.id)}`} target="_blank" rel="noreferrer" className="px-3 py-2 rounded bg-indigo-600 text-white">{t('homeEvents.openPage')}</a>
-                    {isAdmin && (
-                      <button onClick={() => downloadCSV(sel.id)} className="px-3 py-2 rounded bg-green-700 text-white">{t('admin.events.exportCsv')}</button>
+                    <a href={`/attendance?event=${encodeURIComponent(sel.id)}`} className="px-3 py-2 rounded bg-indigo-600 text-white">Open unified page</a>
+                    {(isAdmin || isStaff) && (
+                      <div className="flex gap-2">
+                        <button onClick={() => downloadCSV(sel.id, 'attendance')} className="px-3 py-2 rounded bg-green-700 text-white">{t('admin.events.exportCsv')}</button>
+                        <button onClick={() => downloadCSV(sel.id, 'registrations')} className="px-3 py-2 rounded bg-emerald-700 text-white">Export registrations</button>
+                      </div>
                     )}
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Trophy, ArrowLeft, Medal, Users, Target, Clock } from 'lucide-react'
 import { Team, Submission, TeamProgress } from '../types'
@@ -42,11 +42,7 @@ function LeaderboardPageContent() {
     }
   }
 
-  useEffect(() => {
-    calculateProgress()
-  }, [teams, submissions])
-
-  const calculateProgress = () => {
+  const calculateProgress = useCallback(() => {
     if (!teams || !Array.isArray(teams)) {
       setTeamProgress([])
       return
@@ -95,7 +91,11 @@ function LeaderboardPageContent() {
     })
 
     setTeamProgress(progress)
-  }
+  }, [teams, submissions])
+
+  useEffect(() => {
+    calculateProgress()
+  }, [calculateProgress])
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

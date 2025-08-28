@@ -198,31 +198,91 @@ async function createTables() {
   // Uniqueness: one attendance per email or attendee_id per event
   await db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_att_event_email ON attendance(event_id, email);`)
   await db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_att_event_attendee ON attendance(event_id, attendee_id);`)
+  
+    // Manual score adjustments table
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS score_adjustments (
+        id TEXT PRIMARY KEY,
+        team_id TEXT NOT NULL,
+        delta INTEGER NOT NULL,
+        reason TEXT,
+        actor TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (team_id) REFERENCES teams (id)
+      )
+    `)
+    await db.exec(`CREATE INDEX IF NOT EXISTS idx_adjustments_team ON score_adjustments(team_id);`)
 }
 
 async function insertDefaultUsers() {
   if (!db) throw new Error('Database not initialized')
 
-  const adminPasswordHash = await bcrypt.hash('SecureAdmin2025!', 12)
-  const staff1PasswordHash = await bcrypt.hash('StaffPass123!', 12)
-  const staff2PasswordHash = await bcrypt.hash('StaffPass456!', 12)
+  const fs = require('fs') as typeof import('fs')
+  const credPath = path.join(process.cwd(), 'admin-credentials.json')
+  let usersFromFile: Array<{ username: string; password: string; role: 'admin'|'staff'; name?: string }> | null = null
 
-  // Insert admin user
-  await db.run(`
-    INSERT OR IGNORE INTO users (id, username, password_hash, role, name)
-    VALUES (?, ?, ?, ?, ?)
-  `, ['admin', 'ctf_admin', adminPasswordHash, 'admin', 'CTF Administrator'])
+  try {
+    if (fs.existsSync(credPath)) {
+      const raw = fs.readFileSync(credPath, 'utf8')
+      const parsed = JSON.parse(raw)
+      const admins = Array.isArray(parsed?.admin) ? parsed.admin : []
+      const staff = Array.isArray(parsed?.staff) ? parsed.staff : []
+      const combined = [...admins, ...staff]
+      usersFromFile = combined
+        .map((u: any) => ({
+          username: String(u?.username || ''),
+          password: String(u?.password || ''),
+          role: (String(u?.role || '').toLowerCase() === 'admin' ? 'admin' : 'staff') as 'admin'|'staff',
+          name: u?.name ? String(u.name) : undefined
+        }))
+        .filter(u => u.username && u.password)
+    }
+  } catch (e) {
+    // Ignore file errors and fallback to defaults
+    usersFromFile = null
+  }
 
-  // Insert staff users
-  await db.run(`
-    INSERT OR IGNORE INTO users (id, username, password_hash, role, name)
-    VALUES (?, ?, ?, ?, ?)
-  `, ['staff1', 'staff1', staff1PasswordHash, 'staff', 'Staff Member 1'])
+  const upsertUser = async (u: { username: string; password: string; role: 'admin'|'staff'; name?: string }) => {
+    const id = `${u.role}-${u.username}`
+    const name = u.name || (u.role === 'admin' ? 'CTF Administrator' : 'Staff Member')
+    const hash = await bcrypt.hash(u.password, 12)
+    // Try UPSERT; if unsupported, fallback to manual select/update
+    try {
+      await db!.run(
+        `INSERT INTO users (id, username, password_hash, role, name, is_active)
+         VALUES (?, ?, ?, ?, ?, 1)
+         ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash, role=excluded.role, name=excluded.name, is_active=1`
+      , [id, u.username, hash, u.role, name])
+    } catch (err: any) {
+      const existing = await db!.get(`SELECT id FROM users WHERE username = ?`, [u.username])
+      if (existing) {
+        await db!.run(`UPDATE users SET password_hash = ?, role = ?, name = ?, is_active = 1 WHERE username = ?`, [hash, u.role, name, u.username])
+      } else {
+        await db!.run(`INSERT OR IGNORE INTO users (id, username, password_hash, role, name, is_active) VALUES (?,?,?,?,?,1)`, [id, u.username, hash, u.role, name])
+      }
+    }
+  }
 
-  await db.run(`
-    INSERT OR IGNORE INTO users (id, username, password_hash, role, name)
-    VALUES (?, ?, ?, ?, ?)
-  `, ['staff2', 'staff2', staff2PasswordHash, 'staff', 'Staff Member 2'])
+  if (usersFromFile && usersFromFile.length > 0) {
+    for (const u of usersFromFile) {
+      await upsertUser(u)
+    }
+    return
+  }
+
+  // Fallback hardcoded defaults if no credentials file
+  const defaults: Array<{ username: string; password: string; role: 'admin'|'staff'; name: string; id: string }> = [
+    { id: 'admin', username: 'ctf_admin', password: 'SecureAdmin2025!', role: 'admin', name: 'CTF Administrator' },
+    { id: 'staff1', username: 'staff1', password: 'StaffPass123!', role: 'staff', name: 'Staff Member 1' },
+    { id: 'staff2', username: 'staff2', password: 'StaffPass456!', role: 'staff', name: 'Staff Member 2' }
+  ]
+  for (const d of defaults) {
+    const hash = await bcrypt.hash(d.password, 12)
+    await db.run(`
+      INSERT OR IGNORE INTO users (id, username, password_hash, role, name)
+      VALUES (?, ?, ?, ?, ?)
+    `, [d.id, d.username, hash, d.role, d.name])
+  }
 }
 
 async function insertDefaultEvents() {
@@ -412,6 +472,16 @@ export async function deleteTeam(id: string) {
   return { success: true, message: 'Team deactivated successfully' }
 }
 
+export async function adjustTeamScore(teamId: string, delta: number, reason: string | null, actor: string | null) {
+  const database = await initDatabase()
+  const team = await database.get(`SELECT id FROM teams WHERE id = ? AND is_active = 1`, [teamId])
+  if (!team) throw new Error('Team not found')
+  await database.run(`UPDATE teams SET total_score = total_score + ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?`, [delta, teamId])
+  const id = `adj-${Date.now()}-${Math.random().toString(36).slice(2,8)}`
+  await database.run(`INSERT INTO score_adjustments (id, team_id, delta, reason, actor) VALUES (?,?,?,?,?)`, [id, teamId, delta, reason ?? null, actor ?? null])
+  return { id, teamId, delta }
+}
+
 export async function authenticateTeam(name: string, password: string) {
   const database = await initDatabase()
   const team = await database.get(`
@@ -453,6 +523,42 @@ export async function authenticateUser(username: string, password: string) {
     role: user.role,
     name: user.name
   }
+}
+
+// User management
+export async function listUsers() {
+  const database = await initDatabase()
+  return await database.all(`SELECT id, username, role, name, is_active, created_at FROM users ORDER BY role DESC, username ASC`)
+}
+
+export async function upsertUserAdmin(params: { username: string, password?: string, role: 'admin'|'staff', name?: string }) {
+  const database = await initDatabase()
+  const existing = await database.get(`SELECT * FROM users WHERE username = ?`, [params.username])
+  const name = params.name || (params.role === 'admin' ? 'CTF Administrator' : 'Staff Member')
+  if (existing) {
+    // Update
+    if (params.password) {
+      const hash = await bcrypt.hash(params.password, 12)
+      await database.run(`UPDATE users SET password_hash = ?, role = ?, name = ?, is_active = 1 WHERE username = ?`, [hash, params.role, name, params.username])
+    } else {
+      await database.run(`UPDATE users SET role = ?, name = ?, is_active = 1 WHERE username = ?`, [params.role, name, params.username])
+    }
+    return { updated: true }
+  } else {
+    // Insert
+    if (!params.password) throw new Error('Password required for new user')
+    const hash = await bcrypt.hash(params.password, 12)
+    const id = `${params.role}-${params.username}`
+    await database.run(`INSERT INTO users (id, username, password_hash, role, name, is_active) VALUES (?,?,?,?,?,1)`, [id, params.username, hash, params.role, name])
+    return { created: true }
+  }
+}
+
+export async function setUserActive(username: string, isActive: boolean) {
+  const database = await initDatabase()
+  const res: any = await database.run(`UPDATE users SET is_active = ? WHERE username = ?`, [isActive ? 1 : 0, username])
+  const changes = res && typeof res.changes === 'number' ? res.changes : 0
+  return { success: changes > 0 }
 }
 
 // Submission operations

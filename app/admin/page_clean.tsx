@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Settings, ArrowLeft, CheckCircle, XCircle, Clock, Users, Target, Award, Download, Trophy } from 'lucide-react'
 import { Team, Submission, AdminStats, Challenge } from '../types'
@@ -66,32 +66,7 @@ function AdminPageContent() {
     }
   }
 
-  useEffect(() => {
-    calculateStats()
-  }, [teams, submissions])
-
-  const loadData = () => {
-    const storedTeams = localStorage.getItem('ctf-teams')
-    const storedSubmissions = localStorage.getItem('ctf-submissions')
-    
-    if (storedTeams) {
-      setTeams(JSON.parse(storedTeams))
-    }
-    
-    if (storedSubmissions) {
-      setSubmissions(JSON.parse(storedSubmissions))
-    }
-  }
-
-  const updateChallenge = (challengeId: string, updates: Partial<Challenge>) => {
-    const updatedChallenges = challenges.map(challenge => 
-      challenge.id === challengeId ? { ...challenge, ...updates } : challenge
-    )
-    setChallenges(updatedChallenges)
-    localStorage.setItem('ctf-challenges', JSON.stringify(updatedChallenges))
-  }
-
-  const calculateStats = () => {
+  const calculateStats = useCallback(() => {
     if (teams.length === 0) return
 
     const correctSubmissions = submissions.filter(s => s.status === 'correct').length
@@ -123,7 +98,34 @@ function AdminPageContent() {
       averageScore,
       topTeam: topTeam?.name || 'N/A'
     })
+  }, [teams, submissions])
+
+  useEffect(() => {
+    calculateStats()
+  }, [calculateStats])
+
+  const loadData = () => {
+    const storedTeams = localStorage.getItem('ctf-teams')
+    const storedSubmissions = localStorage.getItem('ctf-submissions')
+    
+    if (storedTeams) {
+      setTeams(JSON.parse(storedTeams))
+    }
+    
+    if (storedSubmissions) {
+      setSubmissions(JSON.parse(storedSubmissions))
+    }
   }
+
+  const updateChallenge = (challengeId: string, updates: Partial<Challenge>) => {
+    const updatedChallenges = challenges.map(challenge => 
+      challenge.id === challengeId ? { ...challenge, ...updates } : challenge
+    )
+    setChallenges(updatedChallenges)
+    localStorage.setItem('ctf-challenges', JSON.stringify(updatedChallenges))
+  }
+
+  // calculateStats is memoized above
 
   const updateSubmissionStatus = (submissionId: string, status: 'correct' | 'incorrect', points: number, notes: string) => {
     const submission = submissions.find(s => s.id === submissionId)

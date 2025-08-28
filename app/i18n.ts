@@ -147,7 +147,7 @@ export const translations = {
     },
     attendancePage: {
       title: 'Event Attendance',
-      subtitle: 'Public check-in page. Location is verified against the event geofence. Your contact details are stored encrypted.',
+  subtitle: 'Public check-in page. Your contact details are stored encrypted. No location required.',
       selectEvent: 'Select Event',
       email: 'Email',
       phone: 'Phone',

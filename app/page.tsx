@@ -90,10 +90,10 @@ function HomePage() {
           </header>
 
           {/* Navigation Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 items-stretch">
             {(isAdmin || isStaff) && (
               <Link href="/teams" className="group">
-                <div className="bg-slate-800/50 backdrop-blur-sm border border-cyber-600/30 rounded-lg p-4 sm:p-6 hover:border-cyber-400 transition-all duration-300 hover:glow">
+                <div className="h-full min-h-48 bg-slate-800/50 backdrop-blur-sm border border-cyber-600/30 rounded-lg p-4 sm:p-6 hover:border-cyber-400 transition-all duration-300 hover:glow flex flex-col">
                   <Users className="h-8 w-8 sm:h-12 sm:w-12 text-cyber-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
                   <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{t('cards.team.title')}</h3>
                   <p className="text-sm sm:text-base text-gray-400">{t('cards.team.desc')}</p>
@@ -102,7 +102,7 @@ function HomePage() {
             )}
 
             <Link href="/challenges" className="group">
-              <div className="bg-slate-800/50 backdrop-blur-sm border border-hacker-600/30 rounded-lg p-4 sm:p-6 hover:border-hacker-400 transition-all duration-300 hover:glow">
+              <div className="h-full min-h-48 bg-slate-800/50 backdrop-blur-sm border border-hacker-600/30 rounded-lg p-4 sm:p-6 hover:border-hacker-400 transition-all duration-300 hover:glow flex flex-col">
                 <Shield className="h-8 w-8 sm:h-12 sm:w-12 text-hacker-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
                 <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{t('cards.challenges.title')}</h3>
                 <p className="text-sm sm:text-base text-gray-400">{t('cards.challenges.desc')}</p>
@@ -110,7 +110,7 @@ function HomePage() {
             </Link>
 
             <Link href="/resources" className="group">
-              <div className="bg-slate-800/50 backdrop-blur-sm border border-green-600/30 rounded-lg p-4 sm:p-6 hover:border-green-400 transition-all duration-300 hover:glow">
+              <div className="h-full min-h-48 bg-slate-800/50 backdrop-blur-sm border border-green-600/30 rounded-lg p-4 sm:p-6 hover:border-green-400 transition-all duration-300 hover:glow flex flex-col">
                 <FileText className="h-8 w-8 sm:h-12 sm:w-12 text-green-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
                 <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{t('cards.resources.title')}</h3>
                 <p className="text-sm sm:text-base text-gray-400">{t('cards.resources.desc')}</p>
@@ -118,7 +118,7 @@ function HomePage() {
             </Link>
 
             <Link href="/events" className="group">
-              <div className="bg-slate-800/50 backdrop-blur-sm border border-cyan-600/30 rounded-lg p-4 sm:p-6 hover:border-cyan-400 transition-all duration-300 hover:glow">
+              <div className="h-full min-h-48 bg-slate-800/50 backdrop-blur-sm border border-cyan-600/30 rounded-lg p-4 sm:p-6 hover:border-cyan-400 transition-all duration-300 hover:glow flex flex-col">
                 <CalendarDays className="h-8 w-8 sm:h-12 sm:w-12 text-cyan-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
                 <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{t('cards.events.title')}</h3>
                 <p className="text-sm sm:text-base text-gray-400">{t('cards.events.desc')}</p>
@@ -126,7 +126,7 @@ function HomePage() {
             </Link>
 
             <Link href="/leaderboard" className="group">
-              <div className="bg-slate-800/50 backdrop-blur-sm border border-yellow-600/30 rounded-lg p-4 sm:p-6 hover:border-yellow-400 transition-all duration-300 hover:glow">
+              <div className="h-full min-h-48 bg-slate-800/50 backdrop-blur-sm border border-yellow-600/30 rounded-lg p-4 sm:p-6 hover:border-yellow-400 transition-all duration-300 hover:glow flex flex-col">
                 <Trophy className="h-8 w-8 sm:h-12 sm:w-12 text-yellow-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
                 <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{t('cards.leaderboard.title')}</h3>
                 <p className="text-sm sm:text-base text-gray-400">{t('cards.leaderboard.desc')}</p>
@@ -135,10 +135,10 @@ function HomePage() {
 
             {(isAdmin || isStaff) && (
               <Link href="/admin" className="group">
-                <div className="bg-slate-800/50 backdrop-blur-sm border border-purple-600/30 rounded-lg p-6 hover:border-purple-400 transition-all duration-300 hover:glow">
-                  <Settings className="h-12 w-12 text-purple-400 mb-4 group-hover:animate-pulse" />
-                  <h3 className="text-xl font-semibold text-white mb-2">{t('cards.admin.title')}</h3>
-                  <p className="text-gray-400">{t('cards.admin.desc')}</p>
+                <div className="h-full min-h-48 bg-slate-800/50 backdrop-blur-sm border border-purple-600/30 rounded-lg p-4 sm:p-6 hover:border-purple-400 transition-all duration-300 hover:glow flex flex-col">
+                  <Settings className="h-8 w-8 sm:h-12 sm:w-12 text-purple-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
+                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{t('cards.admin.title')}</h3>
+                  <p className="text-sm sm:text-base text-gray-400">{t('cards.admin.desc')}</p>
                 </div>
               </Link>
             )}
@@ -146,10 +146,10 @@ function HomePage() {
             {/* Hidden Terminal - Unlocked by Konami Code */}
             {konamiUnlocked && (
               <Link href="/terminal" className="group animate-bounce">
-                <div className="bg-black/80 backdrop-blur-sm border border-green-400/50 rounded-lg p-6 hover:border-green-300 transition-all duration-300 hover:glow shadow-green-400/20 shadow-lg">
-                  <Terminal className="h-12 w-12 text-green-400 mb-4 group-hover:animate-pulse" />
-                  <h3 className="text-xl font-semibold text-green-400 mb-2">{t('cards.secret.title')}</h3>
-                  <p className="text-green-300">{t('cards.secret.desc1')}</p>
+                <div className="h-full min-h-48 bg-black/80 backdrop-blur-sm border border-green-400/50 rounded-lg p-4 sm:p-6 hover:border-green-300 transition-all duration-300 hover:glow shadow-green-400/20 shadow-lg flex flex-col">
+                  <Terminal className="h-8 w-8 sm:h-12 sm:w-12 text-green-400 mb-3 sm:mb-4 group-hover:animate-pulse" />
+                  <h3 className="text-lg sm:text-xl font-semibold text-green-400 mb-2">{t('cards.secret.title')}</h3>
+                  <p className="text-sm sm:text-base text-green-300">{t('cards.secret.desc1')}</p>
                   <p className="text-xs text-green-500 mt-2">{t('cards.secret.desc2')}</p>
                 </div>
               </Link>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Settings, ArrowLeft, CheckCircle, XCircle, Clock, Users, Target, Award } from 'lucide-react'
 import { Team, Submission, AdminStats, Challenge } from '../types'
@@ -120,29 +120,7 @@ function AdminPageContent() {
     loadData()
   }, [])
 
-  useEffect(() => {
-    calculateStats()
-  }, [teams, submissions])
-
-  const loadData = () => {
-    const storedTeams = localStorage.getItem('ctf-teams')
-    const storedSubmissions = localStorage.getItem('ctf-submissions')
-    
-    if (storedTeams) {
-      setTeams(JSON.parse(storedTeams))
-    }
-    
-    if (storedSubmissions) {
-      setSubmissions(JSON.parse(storedSubmissions))
-    }
-  }
-
-  const saveSubmissions = (newSubmissions: Submission[]) => {
-    localStorage.setItem('ctf-submissions', JSON.stringify(newSubmissions))
-    setSubmissions(newSubmissions)
-  }
-
-  const calculateStats = () => {
+  const calculateStats = useCallback(() => {
     if (teams.length === 0) return
 
     const correctSubmissions = submissions.filter(s => s.status === 'correct')
@@ -170,7 +148,31 @@ function AdminPageContent() {
       averageScore: Math.round(averageScore),
       topTeam: topTeam?.name || 'None'
     })
+  }, [teams, submissions])
+
+  useEffect(() => {
+    calculateStats()
+  }, [calculateStats])
+
+  const loadData = () => {
+    const storedTeams = localStorage.getItem('ctf-teams')
+    const storedSubmissions = localStorage.getItem('ctf-submissions')
+    
+    if (storedTeams) {
+      setTeams(JSON.parse(storedTeams))
+    }
+    
+    if (storedSubmissions) {
+      setSubmissions(JSON.parse(storedSubmissions))
+    }
   }
+
+  const saveSubmissions = (newSubmissions: Submission[]) => {
+    localStorage.setItem('ctf-submissions', JSON.stringify(newSubmissions))
+    setSubmissions(newSubmissions)
+  }
+
+  // calculateStats is memoized above
 
   const handleReview = (submission: Submission, status: 'correct' | 'incorrect') => {
     const challengePoints = getChallengePoints(submission.challengeId)
