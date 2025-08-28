@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { action } = body || {}
     if (action === 'upsertEvent') {
-      const { id, name, description, registration_start, registration_end, start_time, end_time, location_name, latitude, longitude, radius_meters, is_active } = body
-      const res = await upsertEvent({ id, name, description, registration_start, registration_end, start_time, end_time, location_name, latitude, longitude, radius_meters, is_active })
+      const { id, name, description, banner_url, speaker_name, registration_start, registration_end, start_time, end_time, location_name, latitude, longitude, radius_meters, is_active } = body
+      const res = await upsertEvent({ id, name, description, banner_url, speaker_name, registration_start, registration_end, start_time, end_time, location_name, latitude, longitude, radius_meters, is_active })
       return NextResponse.json(res)
     } else if (action === 'addLocation') {
       const { eventId, name, latitude, longitude, radius_meters } = body

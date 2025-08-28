@@ -18,6 +18,14 @@ export interface Challenge {
   difficulty: 'easy' | 'medium' | 'hard';
   type: 'security-awareness' | 'password-security' | 'osint' | 'cryptography';
   isActive: boolean;
+  // Optional fields sourced from public/challenges.json
+  correctAnswer?: string;
+  acceptedAnswers?: string[];
+  hints?: string[];
+  penaltyPerIncorrect?: number;
+  maxIncorrectAttempts?: number;
+  // New: whether this challenge requires manual staff review
+  requiresManualReview?: boolean;
 }
 
 export interface Submission {

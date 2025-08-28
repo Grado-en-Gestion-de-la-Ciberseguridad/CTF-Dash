@@ -44,6 +44,8 @@ async function createTables() {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
+      banner_url TEXT,
+      speaker_name TEXT,
       registration_start DATETIME,
       registration_end DATETIME,
       start_time DATETIME,
@@ -116,6 +118,8 @@ async function migrateEventsSchema() {
   const toAdd: Array<{ name: string; type: string; defaultSql?: string }> = []
   if (!names.has('registration_start')) toAdd.push({ name: 'registration_start', type: 'DATETIME' })
   if (!names.has('registration_end')) toAdd.push({ name: 'registration_end', type: 'DATETIME' })
+  if (!names.has('banner_url')) toAdd.push({ name: 'banner_url', type: 'TEXT' })
+  if (!names.has('speaker_name')) toAdd.push({ name: 'speaker_name', type: 'TEXT' })
   for (const c of toAdd) {
     const sql = `ALTER TABLE events ADD COLUMN ${c.name} ${c.type}${c.defaultSql ? ' ' + c.defaultSql : ''}`
     try {
@@ -160,7 +164,7 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 export async function getPublicEvents() {
   const database = await initAttendanceDb()
-  return await database.all(`SELECT id, name, description, registration_start, registration_end, start_time, end_time, location_name, latitude, longitude, radius_meters, is_active FROM events WHERE is_active = 1 ORDER BY start_time ASC`)
+  return await database.all(`SELECT id, name, description, banner_url, speaker_name, registration_start, registration_end, start_time, end_time, location_name, latitude, longitude, radius_meters, is_active FROM events WHERE is_active = 1 ORDER BY start_time ASC`)
 }
 
 export async function recordAttendance(params: {
@@ -292,6 +296,8 @@ export async function upsertEvent(e: {
   id?: string,
   name: string,
   description?: string,
+  banner_url?: string | null,
+  speaker_name?: string | null,
   registration_start?: string | null,
   registration_end?: string | null,
   start_time?: string | null,
@@ -305,15 +311,15 @@ export async function upsertEvent(e: {
   const dbx = await initAttendanceDb()
   if (e.id) {
     await dbx.run(
-      `UPDATE events SET name=?, description=?, registration_start=?, registration_end=?, start_time=?, end_time=?, location_name=?, latitude=?, longitude=?, radius_meters=?, is_active=? WHERE id=?`,
-      [e.name, e.description ?? null, e.registration_start ?? null, e.registration_end ?? null, e.start_time ?? null, e.end_time ?? null, e.location_name ?? null, e.latitude ?? null, e.longitude ?? null, e.radius_meters ?? null, e.is_active ?? 1, e.id]
+      `UPDATE events SET name=?, description=?, banner_url=?, speaker_name=?, registration_start=?, registration_end=?, start_time=?, end_time=?, location_name=?, latitude=?, longitude=?, radius_meters=?, is_active=? WHERE id=?`,
+      [e.name, e.description ?? null, e.banner_url ?? null, e.speaker_name ?? null, e.registration_start ?? null, e.registration_end ?? null, e.start_time ?? null, e.end_time ?? null, e.location_name ?? null, e.latitude ?? null, e.longitude ?? null, e.radius_meters ?? null, e.is_active ?? 1, e.id]
     )
     return { id: e.id }
   } else {
     const id = `event-${Date.now()}-${Math.random().toString(36).slice(2,8)}`
     await dbx.run(
-      `INSERT INTO events (id,name,description,registration_start,registration_end,start_time,end_time,location_name,latitude,longitude,radius_meters,is_active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [id, e.name, e.description ?? null, e.registration_start ?? null, e.registration_end ?? null, e.start_time ?? null, e.end_time ?? null, e.location_name ?? null, e.latitude ?? null, e.longitude ?? null, e.radius_meters ?? null, e.is_active ?? 1]
+      `INSERT INTO events (id,name,description,banner_url,speaker_name,registration_start,registration_end,start_time,end_time,location_name,latitude,longitude,radius_meters,is_active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [id, e.name, e.description ?? null, e.banner_url ?? null, e.speaker_name ?? null, e.registration_start ?? null, e.registration_end ?? null, e.start_time ?? null, e.end_time ?? null, e.location_name ?? null, e.latitude ?? null, e.longitude ?? null, e.radius_meters ?? null, e.is_active ?? 1]
     )
     return { id }
   }

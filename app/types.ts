@@ -49,6 +49,7 @@ export interface Challenge {
   hints?: string[];
   penaltyPerIncorrect?: number; // Points deducted for each incorrect answer
   maxIncorrectAttempts?: number; // Maximum incorrect attempts before challenge is locked
+  requiresManualReview?: boolean; // If true, submissions are marked pending for staff review
 }
 
 export interface Submission {

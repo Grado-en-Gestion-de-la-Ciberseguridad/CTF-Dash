@@ -242,6 +242,36 @@ docker-compose logs -f ctf-dashboard
 ```
 
 ### Option 3: Vercel Deployment
+### Option 4: Podman Pod Deployment
+
+This repository includes a Podman setup that runs the app and an Nginx reverse proxy inside a single pod. SQLite data and the encryption key are persisted via a bind-mounted `data/` directory.
+
+1) Prepare environment
+
+```bash
+cp podman/.env.podman.example .env.local
+# Edit .env.local and set CTF_ATT_KEY (base64 32-byte). Optionally set CTF_DB_PATH/CTF_ATT_DB_PATH to /app/data/*.db
+```
+
+2) Deploy
+
+```bash
+chmod +x podman/deploy.sh
+./podman/deploy.sh
+```
+
+3) Access the app
+
+```bash
+open http://localhost
+# Or on a server, expose port 80 in your firewall and point DNS to the host
+```
+
+Notes:
+- The app image is built using a multi-stage Containerfile that leverages Next.js standalone output created by `npm run build` (which runs the `postbuild` step).
+- Data persists in the host `./data` folder. Back it up regularly.
+- For HTTPS, run an external reverse proxy with TLS termination in front of the pod, or replace the Nginx container with a TLS-enabled config/image.
+
 
 ```bash
 # Install Vercel CLI

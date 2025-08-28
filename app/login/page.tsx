@@ -1,11 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, User, Lock, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../AuthContext'
 import CyberUFVLogo from '../components/CyberUFVLogo'
 import { useLang } from '../LanguageContext'
+import LottieLite from '../components/LottieLite'
+import failAnim from '../../finger-print-fail.json'
+import successAnim from '../../finger-print-lock-success.json'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -16,6 +19,9 @@ export default function LoginPage() {
   const { login } = useAuth()
   const router = useRouter()
   const { t, locale, setLocale } = useLang()
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [showFail, setShowFail] = useState(false)
+  const [redirectPending, setRedirectPending] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,12 +31,18 @@ export default function LoginPage() {
     try {
       const success = await login({ username, password })
       if (success) {
-        router.push('/')
+        setShowSuccess(true)
+        setShowFail(false)
+        setRedirectPending('/')
       } else {
         setError(t('login.errorInvalid'))
+        setShowFail(true)
+        setShowSuccess(false)
       }
     } catch (err) {
       setError(t('login.errorFailed'))
+      setShowFail(true)
+      setShowSuccess(false)
     } finally {
       setIsLoading(false)
     }
@@ -51,6 +63,35 @@ export default function LoginPage() {
               {locale === 'es' ? t('nav.en') : t('nav.es')}
             </button>
           </div>
+          {/* Animation above the logo to avoid overlap */}
+          {(showSuccess || showFail) && (
+            <div className="flex items-center justify-center mb-2">
+              <div className="relative h-20 w-20">
+                {showSuccess && (
+                  <LottieLite
+                    json={successAnim}
+                    className="absolute inset-0"
+                    autoplay
+                    loop={false}
+                    speed={1}
+                    onComplete={() => {
+                      if (redirectPending) router.push(redirectPending)
+                    }}
+                  />
+                )}
+                {showFail && (
+                  <LottieLite
+                    json={failAnim}
+                    className="absolute inset-0"
+                    autoplay
+                    loop={false}
+                    speed={1}
+                    onComplete={() => setShowFail(false)}
+                  />
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-center mb-4">
             <CyberUFVLogo size="lg" />
           </div>

@@ -29,7 +29,7 @@ function AdminPageContent() {
   const [attList, setAttList] = useState<any[]>([])
   const [listsFor, setListsFor] = useState<{ eventId?: string | null; eventName?: string | null } | null>(null)
   const listsRef = useRef<HTMLDivElement | null>(null)
-  const [evForm, setEvForm] = useState<any>({ id: '', name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })
+  const [evForm, setEvForm] = useState<any>({ id: '', name: '', description: '', banner_url: '', speaker_name: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })
   const [manForm, setManForm] = useState<any>({ eventId: '', email: '', phone: '', attendeeId: '', overrideWindow: false })
   const [evMsg, setEvMsg] = useState<string| null>(null)
 
@@ -212,6 +212,8 @@ function AdminPageContent() {
       id: evForm.id?.trim() || undefined,
       name: String(evForm.name).trim(),
       description: evForm.description?.trim() || null,
+      banner_url: evForm.banner_url?.trim() || null,
+      speaker_name: evForm.speaker_name?.trim() || null,
       registration_start: toISO(evForm.registration_start) || null,
       registration_end: toISO(evForm.registration_end) || null,
       start_time: toISO(evForm.start_time) || null,
@@ -230,7 +232,7 @@ function AdminPageContent() {
         return
       }
       setEvMsg('Event saved')
-      setEvForm({ id: '', name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })
+  setEvForm({ id: '', name: '', description: '', banner_url: '', speaker_name: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })
       await loadEvents()
     } catch (e: any) {
       setEvMsg(e?.message || 'Request failed')
@@ -733,6 +735,14 @@ function AdminPageContent() {
                     <input className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.description} onChange={(e) => setEvForm((s: any) => ({ ...s, description: e.target.value }))} placeholder="Short description" />
                   </div>
                   <div>
+                    <label className="block text-sm text-gray-300 mb-1">banner_url</label>
+                    <input className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.banner_url} onChange={(e) => setEvForm((s: any) => ({ ...s, banner_url: e.target.value }))} placeholder="https://.../banner.jpg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">speaker_name</label>
+                    <input className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.speaker_name} onChange={(e) => setEvForm((s: any) => ({ ...s, speaker_name: e.target.value }))} placeholder="Nombre del ponente" />
+                  </div>
+                  <div>
                     <label className="block text-sm text-gray-300 mb-1">registration_start (local)</label>
                     <input type="datetime-local" className="w-full p-2 rounded bg-slate-700 text-white" value={evForm.registration_start} onChange={(e) => setEvForm((s: any) => ({ ...s, registration_start: e.target.value }))} />
                   </div>
@@ -771,7 +781,7 @@ function AdminPageContent() {
                 </div>
                 <div className="mt-3 flex gap-2">
                   <button onClick={saveEvent} className="bg-cyber-600 hover:bg-cyber-700 text-white px-4 py-2 rounded">Save Event</button>
-                  <button onClick={() => setEvForm({ id: '', name: '', description: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })} className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded">Clear</button>
+                  <button onClick={() => setEvForm({ id: '', name: '', description: '', banner_url: '', speaker_name: '', registration_start: '', registration_end: '', start_time: '', end_time: '', location_name: '', latitude: '', longitude: '', radius_meters: 150, is_active: true })} className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded">Clear</button>
                 </div>
                 {evMsg && <div className="mt-2 text-sm text-gray-300">{evMsg}</div>}
               </div>
@@ -795,6 +805,8 @@ function AdminPageContent() {
                             id: ev.id,
                             name: ev.name || '',
                             description: ev.description || '',
+                            banner_url: ev.banner_url || '',
+                            speaker_name: ev.speaker_name || '',
                             registration_start: isoToLocalInput(ev.registration_start),
                             registration_end: isoToLocalInput(ev.registration_end),
                             start_time: isoToLocalInput(ev.start_time),

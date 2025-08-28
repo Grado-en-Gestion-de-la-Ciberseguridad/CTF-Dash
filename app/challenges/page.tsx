@@ -174,12 +174,15 @@ function ChallengesPageContent() {
           return
         }
         
-        // Auto-validate answer if correct answer is set
+        // Determine grading mode. If requiresManualReview, always mark pending for staff to review.
         let status: 'pending' | 'correct' | 'incorrect' = 'pending'
         let points = 0
         let penalty = 0
         
-        if (challengeWithAnswer.correctAnswer) {
+        if (challengeWithAnswer.requiresManualReview) {
+          // Always route to pending review
+          status = 'pending'
+        } else if (challengeWithAnswer.correctAnswer) {
           const userAnswer = answer.trim().toLowerCase()
           const correctAnswer = challengeWithAnswer.correctAnswer.toLowerCase()
           
@@ -367,7 +370,7 @@ function ChallengesPageContent() {
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center space-x-4 text-sm">
+                          <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm">
                             <span className={`font-semibold ${
                               hasCorrectSubmission ? 'text-green-400' : 'text-hacker-400'
                             }`}>{challenge.points} points</span>
@@ -377,6 +380,11 @@ function ChallengesPageContent() {
                             {challenge.penaltyPerIncorrect && !hasCorrectSubmission && (
                               <span className="text-red-400 font-semibold">
                                 -{challenge.penaltyPerIncorrect} penalty per wrong answer
+                              </span>
+                            )}
+                            {challenge.requiresManualReview && (
+                              <span className="text-yellow-300 font-semibold flex items-center">
+                                <Clock className="h-4 w-4 mr-1" /> Manual review
                               </span>
                             )}
                           </div>
@@ -469,6 +477,13 @@ function ChallengesPageContent() {
                 <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Submit Answer</h3>
                 <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">{selectedChallenge.title}</p>
                 <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">{selectedChallenge.description}</p>
+                {selectedChallenge.requiresManualReview && (
+                  <div className="mb-3 sm:mb-4 p-2 bg-yellow-500/10 border-l-4 border-yellow-400 rounded">
+                    <span className="text-yellow-300 text-xs sm:text-sm font-medium">
+                      This challenge requires manual review. Your submission will be marked as pending until a staff member reviews it.
+                    </span>
+                  </div>
+                )}
                 
                 {/* Hints Section */}
                 {selectedChallenge.hints && selectedChallenge.hints.length > 0 && (

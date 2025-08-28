@@ -12,6 +12,8 @@ type EventItem = {
   id: string
   name: string
   description?: string
+  banner_url?: string
+  speaker_name?: string
   registration_start?: string
   registration_end?: string
   start_time?: string
@@ -117,7 +119,12 @@ function EventsPageContent() {
               </select>
               {sel ? (
                 <div className="space-y-2 text-sm">
+                  {(sel.banner_url || 'https://www.ufv.es/wp-content/themes/UFV-THEME/img/logo_UFV_positivo.svg') && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={sel.banner_url || 'https://www.ufv.es/wp-content/themes/UFV-THEME/img/logo_UFV_positivo.svg'} alt={sel.name} className="w-full h-28 object-cover rounded mb-2 bg-slate-900" />
+                  )}
                   <div className="text-white font-medium">{sel.name}</div>
+                  {sel.speaker_name && <div className="text-cyan-300">Ponente: {sel.speaker_name}</div>}
                   {sel.description && <div className="text-gray-300">{sel.description}</div>}
                   <div className="text-gray-400">{t('homeEvents.reg')}: {sel.registration_start || 'n/a'} → {sel.registration_end || 'n/a'}</div>
                   <div className="text-gray-400">{t('homeEvents.event')}: {sel.start_time || 'n/a'} → {sel.end_time || 'n/a'}</div>
@@ -201,6 +208,8 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
   const { t } = useLang()
   const [name, setName] = React.useState('')
   const [description, setDescription] = React.useState('')
+  const [bannerUrl, setBannerUrl] = React.useState('')
+  const [speakerName, setSpeakerName] = React.useState('')
   const [registration_start, setRegStart] = React.useState('')
   const [registration_end, setRegEnd] = React.useState('')
   const [start_time, setStart] = React.useState('')
@@ -262,6 +271,8 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
         action: 'upsertEvent',
         name,
         description,
+        banner_url: bannerUrl || null,
+        speaker_name: speakerName || null,
         registration_start: toISO(registration_start),
         registration_end: toISO(registration_end),
         start_time: toISO(start_time),
@@ -284,10 +295,10 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
           throw new Error(d2?.error || 'Failed to add location')
         }
       }
-      setMsg('Event published')
+    setMsg('Event published')
       onCreated(eventId)
       // reset
-  setName(''); setDescription(''); setRegStart(''); setRegEnd(''); setStart(''); setEnd(''); setLocName(''); setGeofence('40.442205, -3.834616, 100'); setRadius('100')
+  setName(''); setDescription(''); setBannerUrl(''); setSpeakerName(''); setRegStart(''); setRegEnd(''); setStart(''); setEnd(''); setLocName(''); setGeofence('40.442205, -3.834616, 100'); setRadius('100')
     } catch (e: any) {
       setMsg(e.message || 'Failed to publish')
     } finally {
@@ -301,6 +312,8 @@ function CreateEventCard({ onCreated }: { onCreated: (id: string) => void }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.name') + ' (e.g., Campus Cyber Night)'} value={name} onChange={(e) => setName(e.target.value)} />
         <input className="p-2 rounded bg-slate-700 text-white" placeholder={t('admin.events.field.description') + ' (e.g., Hands-on cryptography challenges)'} value={description} onChange={(e) => setDescription(e.target.value)} />
+        <input className="p-2 rounded bg-slate-700 text-white" placeholder="banner_url (https://.../banner.jpg)" value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} />
+        <input className="p-2 rounded bg-slate-700 text-white" placeholder="speaker_name (Nombre del ponente)" value={speakerName} onChange={(e) => setSpeakerName(e.target.value)} />
         <div>
           <label className="block text-xs text-gray-300 mb-1">Registration opens (local)</label>
           <input type="datetime-local" className="p-2 w-full rounded bg-slate-700 text-white" value={registration_start} onChange={(e) => setRegStart(e.target.value)} />

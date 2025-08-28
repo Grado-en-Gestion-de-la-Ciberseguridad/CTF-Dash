@@ -1,22 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Shield, Users, Trophy, Settings, FileText, Terminal, CalendarDays, MapPin } from 'lucide-react'
+import { Shield, Users, Trophy, Settings, FileText, Terminal, CalendarDays, Lock, Radar, Activity, Sparkles } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import Navigation from './Navigation'
-import ProtectedRoute from './ProtectedRoute'
 import CyberUFVLogo from './components/CyberUFVLogo'
 import { useLang } from './LanguageContext'
 
 function HomePage() {
-  const { user, isAdmin, isStaff, isTeam } = useAuth()
+  const { user, isAdmin, isStaff, isTeam, isAuthenticated } = useAuth()
   const { t } = useLang()
   const [konamiUnlocked, setKonamiUnlocked] = useState(false)
   const [konamiSequence, setKonamiSequence] = useState<string[]>([])
   const [upcoming, setUpcoming] = useState<any[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
+  const defaultBanner = 'https://www.ufv.es/wp-content/themes/UFV-THEME/img/logo_UFV_positivo.svg'
 
   // Konami code detection
   useEffect(() => {
@@ -64,33 +63,57 @@ function HomePage() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 cyber-grid">
-        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-          {/* Header */}
-          <header className="text-center mb-8 sm:mb-12">
-            <div className="flex items-center justify-center mb-4 sm:mb-6">
+      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 cyber-grid">
+        <div className="container mx-auto px-3 sm:px-6 py-8 sm:py-12">
+          {/* Hero */}
+          <header className="text-center mb-10 sm:mb-14">
+            <div className="flex items-center justify-center mb-5 sm:mb-8">
               <CyberUFVLogo size="lg" className="sm:hidden" />
               <CyberUFVLogo size="xl" className="hidden sm:block mr-6" />
             </div>
-            <div className="flex flex-col sm:flex-row items-center justify-center mb-4">
-              <Shield className="h-10 w-10 sm:h-16 sm:w-16 text-cyber-400 mb-2 sm:mb-0 sm:mr-4 pulse-glow" />
-              <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white text-center">
+            <div className="flex flex-col items-center justify-center mb-3">
+              <Shield className="h-12 w-12 sm:h-16 sm:w-16 text-cyber-400 mb-3 pulse-glow" />
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
                 {t('home.title')}
               </h1>
             </div>
-            <p className="text-sm sm:text-xl text-gray-300 max-w-2xl mx-auto px-4">
+            <p className="text-base sm:text-xl text-gray-300 max-w-3xl mx-auto px-4">
               {t('home.subtitle')}
             </p>
+            {/* CTAs */}
+            <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Link href="/events" className="px-4 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400/30 shadow-lg shadow-cyan-900/30 transition">
+                Ver eventos
+              </Link>
+              <Link href="/attendance" className="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30 shadow-lg shadow-emerald-900/30 transition">
+                Ir al check-in
+              </Link>
+              {!isAuthenticated && (
+                <Link href="/login" className="px-4 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-gray-100 border border-slate-600/50 transition">
+                  Iniciar sesión
+                </Link>
+              )}
+              {(isAdmin || isStaff) && (
+                <Link href="/admin" className="px-4 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white border border-purple-400/30 transition">
+                  Panel de administración
+                </Link>
+              )}
+              {isTeam && (
+                <Link href="/challenges" className="px-4 py-2.5 rounded-lg bg-hacker-600 hover:bg-hacker-500 text-white border border-hacker-400/30 transition">
+                  Ir a retos
+                </Link>
+              )}
+            </div>
             {user && (
-              <div className="mt-4 p-3 sm:p-4 bg-slate-800/50 rounded-lg max-w-sm sm:max-w-md mx-auto">
+              <div className="mt-5 p-4 bg-slate-800/50 rounded-lg max-w-sm sm:max-w-md mx-auto border border-slate-700/60">
                 <p className="text-cyan-300 text-sm sm:text-base">{t('home.welcomeBack', { name: user.name })}</p>
                 {isTeam && <p className="text-xs sm:text-sm text-gray-400">{t('home.teamLabel', { team: user.username })}</p>}
               </div>
             )}
           </header>
 
-          {/* Navigation Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 items-stretch">
+          {/* Quick navigation */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10 items-stretch">
             {(isAdmin || isStaff) && (
               <Link href="/teams" className="group">
                 <div className="h-full min-h-48 bg-slate-800/50 backdrop-blur-sm border border-cyber-600/30 rounded-lg p-4 sm:p-6 hover:border-cyber-400 transition-all duration-300 hover:glow flex flex-col">
@@ -156,8 +179,45 @@ function HomePage() {
             )}
           </div>
 
+          {/* Features */}
+          <section className="bg-slate-900/60 backdrop-blur-sm border border-slate-700/60 rounded-lg p-6 sm:p-8 mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 text-center">Características destacadas</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700">
+                <Activity className="h-8 w-8 text-cyan-400 mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-1">Progreso en tiempo real</h3>
+                <p className="text-gray-300 text-sm">Clasificación instantánea y seguimiento de puntos por equipo.</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700">
+                <Sparkles className="h-8 w-8 text-emerald-400 mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-1">Salas de retos</h3>
+                <p className="text-gray-300 text-sm">Concienciación, contraseñas, OSINT y criptografía.</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700">
+                <Users className="h-8 w-8 text-purple-400 mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-1">Gestión de equipos</h3>
+                <p className="text-gray-300 text-sm">Registro sencillo y administración centralizada.</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700">
+                <Settings className="h-8 w-8 text-yellow-400 mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-1">Panel administrativo</h3>
+                <p className="text-gray-300 text-sm">Herramientas para personal y administración del evento.</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700">
+                <Lock className="h-8 w-8 text-red-400 mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-1">Datos cifrados</h3>
+                <p className="text-gray-300 text-sm">Registro y asistencia con PII protegida y exportaciones seguras.</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700">
+                <CalendarDays className="h-8 w-8 text-cyan-300 mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-1">Calendario de eventos</h3>
+                <p className="text-gray-300 text-sm">Inscripción y check-in en un solo lugar.</p>
+              </div>
+            </div>
+          </section>
+
           {/* Event Information */}
-          <div className="bg-slate-800/30 backdrop-blur-sm border border-cyber-600/30 rounded-lg p-8">
+          <div className="bg-slate-900/60 backdrop-blur-sm border border-cyber-600/30 rounded-lg p-6 sm:p-8">
             <h2 className="text-3xl font-bold text-white mb-6 text-center">{t('events.header')}</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-slate-700/50 rounded-lg p-4">
@@ -186,15 +246,22 @@ function HomePage() {
               ) : (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {upcoming.slice(0, 6).map((ev: any) => (
-                    <div key={ev.id} className="bg-slate-700/50 rounded p-3">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="font-medium text-white">{ev.name}</div>
-                          {ev.description && <div className="text-xs text-gray-400">{ev.description}</div>}
-                          <div className="text-xs text-gray-500 mt-1">{t('homeEvents.reg')}: {ev.registration_start || 'n/a'} → {ev.registration_end || 'n/a'}</div>
-                          <div className="text-xs text-gray-500">{t('homeEvents.event')}: {ev.start_time || 'n/a'} → {ev.end_time || 'n/a'}</div>
+                    <div key={ev.id} className="bg-slate-800/60 rounded overflow-hidden border border-slate-700">
+                      {(ev.banner_url || defaultBanner) && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={ev.banner_url || defaultBanner} alt={ev.name} className="w-full h-28 object-cover bg-slate-900" />
+                      )}
+                      <div className="p-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="font-medium text-white">{ev.name}</div>
+                            {ev.speaker_name && <div className="text-xs text-cyan-300">Ponente: {ev.speaker_name}</div>}
+                            {ev.description && <div className="text-xs text-gray-400 mt-1">{ev.description}</div>}
+                            <div className="text-xs text-gray-500 mt-1">{t('homeEvents.reg')}: {ev.registration_start || 'n/a'} → {ev.registration_end || 'n/a'}</div>
+                            <div className="text-xs text-gray-500">{t('homeEvents.event')}: {ev.start_time || 'n/a'} → {ev.end_time || 'n/a'}</div>
+                          </div>
+                          <a className="text-cyan-300 text-xs underline" href={`/events/${encodeURIComponent(ev.id)}`} target="_blank" rel="noreferrer">{t('homeEvents.openPage')}</a>
                         </div>
-                        <a className="text-cyan-300 text-xs underline" href={`/events/${encodeURIComponent(ev.id)}`} target="_blank" rel="noreferrer">{t('homeEvents.openPage')}</a>
                       </div>
                     </div>
                   ))}
@@ -224,9 +291,5 @@ function HomePage() {
 }
 
 export default function Home() {
-  return (
-    <ProtectedRoute>
-      <HomePage />
-    </ProtectedRoute>
-  )
+  return <HomePage />
 }

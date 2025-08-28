@@ -58,11 +58,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // If the challenge requires manual review, force status to 'pending' regardless of client input.
+    let finalStatus: 'correct'|'incorrect'|'pending' = status
+    try {
+      const fs = await import('fs')
+      const path = await import('path')
+      const raw = fs.readFileSync(path.join(process.cwd(), 'public', 'challenges.json'), 'utf8')
+      const parsed = JSON.parse(raw)
+      const ch = Array.isArray(parsed?.challenges) ? parsed.challenges.find((c: any) => c.id === challengeId) : null
+      if (ch && ch.requiresManualReview) {
+        finalStatus = 'pending'
+      }
+    } catch (_) {
+      // ignore file errors; trust client status if file unavailable
+    }
+
     const submission = await createSubmission(
       teamId,
       challengeId,
       answer,
-      status,
+      finalStatus,
       points || 0,
       penalty || 0
     )
